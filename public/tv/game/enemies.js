@@ -19,6 +19,7 @@ export class Enemies {
     const gun = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.55), new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.6, roughness: 0.4 }));
     gun.position.set(0.22, 1.2, 0.35); m.body.add(gun);
     m.ring.material.color.set(0xff2a2a);
+    m.bake();
     m.root.position.set(x, y, z);
     this.scene.add(m.root);
     return {

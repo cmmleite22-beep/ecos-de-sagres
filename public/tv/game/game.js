@@ -8,6 +8,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { PhysicsWorld, GRAVITY } from './physics.js';
 import { createMaterials } from './textures.js';
+import { bakeGroup } from './scenery.js';
 import { buildCharacter, nameTag } from './character.js';
 import { Level1, LINES, ENEMY_SPOTS } from './level1.js';
 import { Enemies } from './enemies.js';
@@ -16,6 +17,7 @@ import { BTN, CHARACTERS } from '../../shared/protocol.js';
 
 const WALK = 4.6, SPRINT = 7.4, JUMP_V = 9.2, CLIMB_V = 3.4, EYE = 1.62;
 const MAX_HP = 100, REGEN_DELAY = 4, REGEN_RATE = 14;
+const AIM_ASSIST = 0.16, AIM_SNAP = 0.1; // rad: ~9° de assistência, ~6° de correção do tiro
 const FIRE_COOLDOWN = 0.22, LOOK_SENS = 0.0042, STICK_LOOK = 2.6;
 
 // camadas: 0 = mundo; 1..4 = corpo do jogador i (escondido na própria vista); 5..8 = arma do jogador i
@@ -37,6 +39,7 @@ export class Game {
     this.cpZ = -10;
     this.relicsFound = 0;
     this.shakeAmt = 0;
+    this.autoAim = new URLSearchParams(location.search).get('autoaim') !== '0'; // ligado por omissão
     this.audio = new Sfx();
     this.clock = new THREE.Clock();
     this.initRenderer();
@@ -71,13 +74,13 @@ export class Game {
     this.renderer = r;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x9fb39a, high ? 0.0055 : 0.008);
+    scene.fog = new THREE.FogExp2(0xa7bcc0, high ? 0.0045 : 0.0065);
     this.scene = scene;
 
     const sky = new Sky();
     sky.scale.setScalar(1000);
     const u = sky.material.uniforms;
-    u.turbidity.value = 6; u.rayleigh.value = 1.6; u.mieCoefficient.value = 0.006; u.mieDirectionalG.value = 0.85;
+    u.turbidity.value = 3.5; u.rayleigh.value = 2.4; u.mieCoefficient.value = 0.006; u.mieDirectionalG.value = 0.85;
     const sun = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(58), THREE.MathUtils.degToRad(150));
     u.sunPosition.value.copy(sun);
     scene.add(sky);
@@ -174,6 +177,7 @@ export class Game {
   makeBody(p) {
     const idx = CHARACTERS.indexOf(p.char);
     p.model = buildCharacter(p.char.color, idx);
+    p.model.bake();
     p.tag = nameTag(p.name, p.char.color); p.model.root.add(p.tag);
     this.scene.add(p.model.root);
     p.view = this.buildViewModel(p.char.color);
@@ -249,23 +253,58 @@ export class Game {
   // arma e mão na primeira pessoa
   buildViewModel(colorHex) {
     const g = new THREE.Group();
-    const metal = new THREE.MeshStandardMaterial({ color: 0x2a2b2e, metalness: 0.85, roughness: 0.35 });
-    const grip = new THREE.MeshStandardMaterial({ color: 0x4a3322, roughness: 0.8 });
-    const sleeve = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8 });
-    const skin = new THREE.MeshStandardMaterial({ color: 0xc89470, roughness: 0.6 });
-    const slide = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.26), metal); slide.position.set(0, 0.03, -0.08);
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.05, 8), metal);
-    barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.035, -0.23);
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.13, 0.06), grip); handle.position.set(0, -0.05, 0.02); handle.rotation.x = 0.25;
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), skin); hand.scale.set(1, 1.2, 1.3); hand.position.set(0.01, -0.05, 0.04);
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.45, 10), sleeve);
-    arm.rotation.x = Math.PI / 2 - 0.25; arm.position.set(0.03, -0.1, 0.27);
+    const metal = new THREE.MeshStandardMaterial({ color: 0x23252a, metalness: 0.9, roughness: 0.32 });
+    const worn = new THREE.MeshStandardMaterial({ color: 0x4a4d52, metalness: 0.95, roughness: 0.25 });
+    const grip = new THREE.MeshStandardMaterial({ color: 0x3b2a1c, roughness: 0.75 });
+    const sleeve = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.85 });
+    const glove = new THREE.MeshStandardMaterial({ color: 0x5a4030, roughness: 0.7 });
+    const skin = new THREE.MeshStandardMaterial({ color: 0xc89470, roughness: 0.55 });
+    const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => {
+      const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m;
+    };
+    const rbox = (w, h, d, r = 0.006) => { // caixa com arestas arredondadas (capsulas nos cantos via escala)
+      const geo = new THREE.BoxGeometry(w, h, d, 2, 2, 4);
+      const p = geo.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i), y = p.getY(i);
+        const ex = Math.max(0, Math.abs(x) - (w / 2 - r)), ey = Math.max(0, Math.abs(y) - (h / 2 - r));
+        if (ex > 0 && ey > 0) { const k = r / Math.hypot(ex, ey) * 0.7; p.setX(i, Math.sign(x) * (w / 2 - r + ex * k)); p.setY(i, Math.sign(y) * (h / 2 - r + ey * k)); }
+      }
+      geo.computeVertexNormals(); return geo;
+    };
+    // corrediça com estrias, armação, cano, miras
+    add(rbox(0.05, 0.05, 0.27), metal, 0, 0.036, -0.085);
+    for (let i = 0; i < 6; i++) add(new THREE.BoxGeometry(0.052, 0.04, 0.004), worn, 0, 0.036, 0.02 + i * 0.008);
+    add(rbox(0.046, 0.03, 0.22), metal, 0, -0.002, -0.07);
+    add(new THREE.CylinderGeometry(0.011, 0.011, 0.03, 12), worn, 0, 0.04, -0.225, Math.PI / 2);
+    add(new THREE.BoxGeometry(0.008, 0.012, 0.012), worn, 0, 0.066, -0.2);
+    add(new THREE.BoxGeometry(0.02, 0.01, 0.01), worn, 0, 0.065, 0.035);
+    add(new THREE.BoxGeometry(0.03, 0.02, 0.07), worn, 0, 0.02, -0.11).position.x = 0.0; // janela de ejeção
+    // guarda-mato e gatilho
+    const guard = add(new THREE.TorusGeometry(0.03, 0.005, 6, 16, Math.PI), metal, 0, -0.02, -0.02, 0, Math.PI / 2, Math.PI);
+    guard.scale.set(1, 0.8, 1);
+    add(new THREE.BoxGeometry(0.006, 0.025, 0.008), worn, 0, -0.025, -0.015, 0.3);
+    // punho com placas de madeira
+    add(rbox(0.044, 0.13, 0.055, 0.01), grip, 0, -0.07, 0.03, 0.22);
+    add(new THREE.BoxGeometry(0.046, 0.012, 0.05), metal, 0, -0.135, 0.045, 0.22);
+    // mão: palma, dedos à volta do punho, polegar
+    add(rbox(0.06, 0.085, 0.07, 0.02), glove, 0.004, -0.065, 0.045, 0.22);
+    for (let f = 0; f < 3; f++) {
+      const finger = add(new THREE.CapsuleGeometry(0.0105, 0.035, 3, 8), skin, -0.012, -0.045 - f * 0.024, 0.004 - f * 0.005, 0.22, 0, Math.PI / 2);
+      finger.scale.set(1, 1, 1);
+    }
+    add(new THREE.CapsuleGeometry(0.011, 0.03, 3, 8), skin, -0.012, -0.02, -0.018, 0.2, 0, Math.PI / 2 - 0.4); // indicador no gatilho
+    add(new THREE.CapsuleGeometry(0.012, 0.04, 3, 8), skin, 0.028, -0.012, 0.012, -1.2, 0, 0.2); // polegar
+    // antebraço com manga e punho dobrado
+    add(new THREE.CylinderGeometry(0.036, 0.042, 0.12, 12), skin, 0.01, -0.1, 0.12, Math.PI / 2 - 0.3);
+    add(new THREE.CylinderGeometry(0.052, 0.05, 0.05, 14), sleeve, 0.012, -0.12, 0.19, Math.PI / 2 - 0.3);
+    add(new THREE.CylinderGeometry(0.055, 0.065, 0.4, 14), sleeve, 0.02, -0.17, 0.39, Math.PI / 2 - 0.3);
     const flash = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 8), new THREE.MeshBasicMaterial({ color: 0xffd080, transparent: true, opacity: 0 }));
-    flash.rotation.x = -Math.PI / 2; flash.position.set(0, 0.035, -0.33);
-    g.add(slide, barrel, handle, hand, arm, flash);
-    g.position.set(0.19, -0.17, -0.4); g.scale.setScalar(0.75);
+    flash.rotation.x = -Math.PI / 2; flash.position.set(0, 0.04, -0.32);
+    g.add(flash);
+    bakeGroup(g, [flash]);
+    g.position.set(0.19, -0.17, -0.4); g.scale.setScalar(0.85);
     g.userData = { flash, base: g.position.clone() };
-    g.traverse((o) => { if (o.material) o.material.depthTest = true; });
     return g;
   }
 
@@ -362,6 +401,9 @@ export class Game {
     this.audio.play('shot');
     const o = new THREE.Vector3(); p.cam.getWorldPosition(o);
     const d = new THREE.Vector3(); p.cam.getWorldDirection(d);
+    // mira automática: se um mercenário visível estiver perto da mira, o tiro vai para ele
+    const tgt = this.autoAim ? this.aimTarget(p, o, d, AIM_SNAP) : null;
+    if (tgt) d.copy(tgt.dir);
     const wallT = this.world.raycast(o, d, 120);
     const hit = this.enemies.rayHit(o, d, wallT);
     const muzzle = new THREE.Vector3(); p.view.userData.flash.getWorldPosition(muzzle);
@@ -379,6 +421,43 @@ export class Game {
     const m = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffd28a, transparent: true }));
     m.position.copy(at); this.scene.add(m);
     this.fx.push({ m, life: 0.2 });
+  }
+
+  // Mercenário vivo e visível mais próximo da direção da mira (ângulo em radianos, mais largo ao perto)
+  aimTarget(p, o, d, maxAng) {
+    let best = null, bestScore = Infinity;
+    const v = new THREE.Vector3();
+    for (const e of this.enemies.list) {
+      if (e.dead) continue;
+      v.set(e.pos.x, e.pos.y + 1.15, e.pos.z).sub(o);
+      const dist = v.length();
+      if (dist > 60 || dist < 0.5) continue;
+      v.divideScalar(dist);
+      const ang = Math.acos(Math.min(1, v.dot(d)));
+      const lim = maxAng + Math.atan2(0.6, dist); // tolerância extra do tamanho do corpo
+      if (ang > lim) continue;
+      if (this.world.raycast(o, v, dist) < dist - 0.4) continue; // há parede pelo meio
+      const score = ang / lim + dist / 120;
+      if (score < bestScore) { bestScore = score; best = { e, dir: v.clone(), ang, dist }; }
+    }
+    return best;
+  }
+
+  // Assistência de mira: puxa a câmara suavemente para o alvo quando a mira está perto
+  aimAssist(p, dt) {
+    // só ajuda quando o jogador está a disparar ou a apontar (nunca a escalar)
+    if (!this.autoAim || this.phase !== 'play' || p.climbing || !(p.firing || p.looking)) return;
+    const o = new THREE.Vector3(); p.cam.getWorldPosition(o);
+    const cp = Math.cos(p.pitch);
+    const d = new THREE.Vector3(Math.sin(p.yaw) * cp, Math.sin(p.pitch), Math.cos(p.yaw) * cp);
+    const tgt = this.aimTarget(p, o, d, AIM_ASSIST);
+    if (!tgt) return;
+    const wantYaw = Math.atan2(tgt.dir.x, tgt.dir.z);
+    const wantPitch = Math.asin(clamp(tgt.dir.y, -1, 1));
+    let dy = wantYaw - p.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    const k = Math.min(1, dt * (p.firing ? 7 : 3.5)); // mais forte enquanto dispara
+    p.yaw += dy * k;
+    p.pitch += (wantPitch - p.pitch) * k;
   }
 
   updatePlayer(p, dt) {
@@ -403,7 +482,10 @@ export class Game {
     p.yaw -= (p.lookDX * LOOK_SENS * p.sens) + inp.rx * STICK_LOOK * p.sens * dt;
     p.pitch -= (p.lookDY * LOOK_SENS * p.sens) - inp.ry * STICK_LOOK * 0.7 * p.sens * dt;
     p.pitch = clamp(p.pitch, -1.35, 1.35);
+    p.looking = !!(p.lookDX || p.lookDY || inp.rx || inp.ry);
     p.lookDX = 0; p.lookDY = 0;
+    p.firing = !!(inp.b & BTN.FIRE);
+    this.aimAssist(p, dt);
 
     // movimento relativo ao olhar (frente = (sin yaw, cos yaw))
     const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw);
@@ -412,7 +494,8 @@ export class Game {
     const mag = Math.hypot(inp.x, inp.y);
     const dead = mag < 0.12;
     if (mag > 1) { mx /= mag; mz /= mag; }
-    const speed = (inp.b & BTN.SPRINT) && inp.y > 0.3 ? SPRINT : WALK;
+    // correr: botão CORRER ou joystick empurrado até ao fim para a frente (mais fácil no telemóvel)
+    const speed = ((inp.b & BTN.SPRINT) && inp.y > 0.3) || (inp.y > 0.8 && mag > 0.95 && !this.level.climbAt(p)) ? SPRINT : WALK;
     const tx = dead ? 0 : mx * speed, tz = dead ? 0 : mz * speed;
     const acc = p.onGround ? 40 : 14;
     p.vel.x += clamp(tx - p.vel.x, -acc * dt, acc * dt);
@@ -428,7 +511,7 @@ export class Game {
       p.vel.y = Math.max(-30, p.vel.y - GRAVITY * dt);
     }
 
-    p.coyote = p.onGround ? 0.12 : p.coyote - dt;
+    p.coyote = p.onGround ? 0.18 : p.coyote - dt;
     if (p.jumpBuf > 0 && p.coyote > 0 && !p.climbing) {
       p.vel.y = JUMP_V; p.coyote = 0; p.jumpBuf = 0; p.ground = null;
       this.audio.play('jump');
