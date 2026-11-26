@@ -10,9 +10,9 @@
   window.IS_CAST = /CrKey/i.test(navigator.userAgent) || new URLSearchParams(location.search).has('cast');
   if (window.IS_CAST) document.write('<script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"><\/script>');
 </script>
-<script src="/vendor/qrcode.js"></script>
+<script src="../vendor/qrcode.js"></script>
 <script type="importmap">
-{ "imports": { "three": "/vendor/three.module.js", "three/addons/": "/vendor/addons/" } }
+{ "imports": { "three": "../vendor/three.module.js", "three/addons/": "../vendor/addons/" } }
 </script>
 </head>
 <body>

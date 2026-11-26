@@ -26,14 +26,23 @@ npm start
 No PC também se joga com teclado e rato: WASD, rato (clica no ecrã), Espaço, Shift, E, F/clique para disparar e Enter para começar.
 Qualidade gráfica: `?q=high` (PC) ou `?q=cast` (leve). O Chromecast escolhe `cast` automaticamente.
 
-## Correr diretamente no Chromecast (modo receiver, menos atraso)
+## Correr diretamente no Chromecast (grátis, GitHub Pages)
 
-O Chromecast só abre receivers em **HTTPS** e registados na Google:
+O jogo também está publicado em HTTPS no GitHub Pages, sem servidor e sem custos de alojamento:
 
-1. Aloja o projeto num servidor com HTTPS (Render, Railway, Fly.io ou um VPS) com `npm start`. A variável `PORT` é respeitada.
-2. Regista-te em <https://cast.google.com/publish> (taxa única de 5 USD), cria uma app **Custom Receiver** com o URL `https://O-TEU-DOMINIO/tv/` e regista o número de série do teu Chromecast para testes.
-3. Põe o *Application ID* em `public/shared/config.js` → `CAST_APP_ID`.
-4. No telemóvel, abre `https://O-TEU-DOMINIO/controller/`. Aparece o botão **Ligar ao Chromecast**: o primeiro telemóvel lança o jogo na TV e os outros juntam-se. Também podem continuar a entrar pelo código QR.
+- TV (receiver Cast): `https://cmmleite22-beep.github.io/ecos-de-sagres/tv/?cast=1`
+- Comando: `https://cmmleite22-beep.github.io/ecos-de-sagres/controller/`
+
+Neste modo não há salas nem QR: os telemóveis ligam-se pelo botão **Ligar ao Chromecast** (Chrome no Android) e as mensagens vão pelo canal Cast. O primeiro telemóvel abre o jogo na TV e os outros juntam-se à mesma sessão.
+Cada `push` para `main` publica automaticamente (`.github/workflows/pages.yml`).
+
+Registo na Google (uma vez, 5 USD):
+1. <https://cast.google.com/publish> → pagar o registo de programador.
+2. **Add new application → Custom Receiver**, nome "Ecos de Sagres", URL `https://cmmleite22-beep.github.io/ecos-de-sagres/tv/?cast=1`.
+3. **Add new Device** com o número de série do Chromecast (está na caixa ou em Google Home › dispositivo › Definições › Informações do dispositivo). Depois de registar, desliga e volta a ligar o Chromecast (pode levar ~15 min a ficar ativo).
+4. Copia o *Application ID* para `public/shared/config.js` → `CAST_APP_ID` e faz push.
+
+O modo local (`npm start` + QR) continua a funcionar como antes e pode usar-se ao mesmo tempo.
 
 ## Testes
 
