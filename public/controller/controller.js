@@ -5,6 +5,7 @@ import { BTN, CHARACTERS } from '../shared/protocol.js';
 
 const $ = (s) => document.querySelector(s);
 const params = new URLSearchParams(location.search);
+const NATIVE = params.has('native'); // aberto a partir da app nativa da TV (Google TV): sem Chromecast
 const store = {
   get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
@@ -150,7 +151,7 @@ function castErrorText(code) {
   if (STATIC_MODE && standalone) { window.__envWarn = true; $('#cast-state').textContent = 'Abriste o atalho do ecrã inicial: abre antes o endereço no Chrome.'; }
   else if (STATIC_MODE && !isChrome) { window.__envWarn = true; $('#cast-state').textContent = 'Para o Chromecast, abre esta página no Google Chrome.'; }
 }
-if (CONFIG.CAST_APP_ID !== 'CHANGE_ME') {
+if (CONFIG.CAST_APP_ID !== 'CHANGE_ME' && !NATIVE) {
   window.__onGCastApiAvailable = (ok) => {
     if (!ok) return;
     const ctx = cast.framework.CastContext.getInstance();
