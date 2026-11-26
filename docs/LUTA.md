@@ -51,7 +51,8 @@ Cenários: Cais de Ponta Delgada ao pôr do sol, Miradouro das Sete Cidades e Te
 | `tv/jogo/cenarios.js`, `efeitos.js`, `som.js`, `ia.js`, `net.js`, `hud.js` | cenários, partículas, som, máquina, rede, ecrã de entrada |
 | `comando/` | comando do telemóvel (PWA) |
 
-## Chromecast: registar a aplicação (uma vez, grátis — a conta de programador já está paga)
+## Chromecast
+Aplicação Cast registada: **C8074D94** (em `public/luta/config.js`). Como foi registada:
 1. <https://cast.google.com/publish> → **Add new application → Custom Receiver**, nome "Fúria Atlântica",
    URL `https://cmmleite22-beep.github.io/ecos-de-sagres/luta/tv/?cast=1`.
 2. Publicar a aplicação (como no Ecos de Sagres, para não ser preciso registar o número de série da TV).

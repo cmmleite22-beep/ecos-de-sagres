@@ -6,7 +6,7 @@ export const LUTA = {
   // ID da aplicação Cast deste jogo (https://cast.google.com/publish → Add new application → Custom Receiver,
   // URL https://cmmleite22-beep.github.io/ecos-de-sagres/luta/tv/?cast=1). Enquanto for 'CHANGE_ME',
   // o botão Chromecast fica escondido e joga-se pelo código da sala (npm start).
-  CAST_APP_ID: 'CHANGE_ME',
+  CAST_APP_ID: 'C8074D94',
   CAST_NAMESPACE: 'urn:x-cast:pt.furiaatlantica.game',
   MAX_PLAYERS: 4,
 };
