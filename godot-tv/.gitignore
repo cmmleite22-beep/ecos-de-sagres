@@ -1,0 +1,5 @@
+.godot/
+assets/polyhaven/
+*.apk
+*.keystore
+scripts/web_assets.gd
