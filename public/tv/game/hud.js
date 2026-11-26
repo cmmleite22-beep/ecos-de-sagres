@@ -86,6 +86,7 @@ export class Hud {
       </div>`).join('');
   }
 
+  hideWin() { $('#win').classList.add('hidden'); }
   setRelics(n, total) { $('#relics').textContent = `◆ ${n} / ${total}`; }
   showLobby(on) { $('#lobby').classList.toggle('hidden', !on); $('#ingame').classList.toggle('hidden', on); }
 
@@ -108,7 +109,8 @@ export class Hud {
     $('#win-stats').innerHTML = `
       <p>Tempo: ${m}m ${String(s).padStart(2, '0')}s · Relíquias: ${found}/${total}</p>
       ${players.map((p) => `<p style="color:${p.char.color}">${esc(p.name)} — ◆ ${p.relics}</p>`).join('')}
-      <p class="next">Continua no Capítulo 2 — "Areias de Socotra"</p>`;
+      <p class="next">Capítulo 2 — "Areias de Socotra": em breve.</p>
+      <p class="next">Carrega em JOGAR DE NOVO no telemóvel para repetir o capítulo.</p>`;
     $('#win').classList.remove('hidden');
   }
 

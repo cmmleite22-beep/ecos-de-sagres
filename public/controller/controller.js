@@ -59,14 +59,15 @@ function onMessage(m) {
       lobby = m.players; phase = m.phase;
       $('#lobby-list').textContent = lobby.map((p) => p.name).join(' · ');
       renderChars('#chars2', true);
-      if (phase !== 'lobby' && !$('#s-lobby').classList.contains('hidden')) show('s-pad');
+      if (phase === 'play' && !$('#s-lobby').classList.contains('hidden')) show('s-pad');
       break;
     case 'state': {
       const pct = Math.max(0, m.hp / (m.max || 100) * 100);
       $('#hpbar div').style.width = pct + '%';
       $('#hpbar div').classList.toggle('low', pct < 35);
       $('#rel').textContent = `◆ ${m.relics} (equipa ${m.team}/${m.total})  ✕ ${m.kills || 0}`;
-      if (m.phase !== 'lobby') show('s-pad');
+      if (m.phase === 'win') { $('#btn-start').textContent = 'JOGAR DE NOVO'; show('s-lobby'); }
+      else if (m.phase !== 'lobby') { $('#btn-start').textContent = 'COMEÇAR'; show('s-pad'); }
       break;
     }
     case 'buzz': navigator.vibrate?.(m.ms || 50); break;
