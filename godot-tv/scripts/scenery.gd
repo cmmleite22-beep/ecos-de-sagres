@@ -247,13 +247,15 @@ func jungle() -> void:
 	var bush := _cards_mesh(3, 1.1, 1.6, M.m.leaves)
 	var fern := _cards_mesh(4, 0.8, 0.9, M.m.frond)
 	var grass := _cards_mesh(3, 0.45, 0.7, M.m.grassBlades)
-	var k := 1.0 if high else 0.6
-	_scatter(palm, int(70 * k), 12.5, 26.0, -40.0, 200.0, 0.8, 1.3)
-	_scatter(palm, int(50 * k), 26.0, 60.0, -40.0, 230.0, 0.9, 1.4)
-	_scatter(tree, int(80 * k), 22.0, 75.0, -50.0, 230.0, 0.9, 1.6)
-	_scatter(bush, int(160 * k), 12.0, 40.0, -40.0, 210.0, 0.6, 1.3, false)
-	_scatter(fern, int(160 * k), 12.0, 30.0, -40.0, 210.0, 0.7, 1.4, false)
-	_scatter(grass, int(900 * k), 11.8, 28.0, -40.0, 210.0, 0.7, 1.5, false, 0.0)
+	# folhagem com recortes (alpha) é o que mais pesa numa GPU de TV: muito menos na versão leve
+	var k := 1.0 if high else 0.4
+	_scatter(palm, int(70 * k), 12.5, 26.0, -40.0, 200.0, 0.8, 1.3, high)
+	_scatter(palm, int(50 * k), 26.0, 60.0, -40.0, 230.0, 0.9, 1.4, high)
+	_scatter(tree, int(80 * k), 22.0, 75.0, -50.0, 230.0, 0.9, 1.6, high)
+	_scatter(bush, int(160 * k * k), 12.0, 40.0, -40.0, 210.0, 0.6, 1.3, false)
+	_scatter(fern, int(160 * k * k), 12.0, 30.0, -40.0, 210.0, 0.7, 1.4, false)
+	if high:
+		_scatter(grass, 900, 11.8, 28.0, -40.0, 210.0, 0.7, 1.5, false, 0.0)
 
 func _rock_mesh(seed: int) -> ArrayMesh:
 	var sm := SphereMesh.new()
@@ -278,7 +280,7 @@ func _rock_mesh(seed: int) -> ArrayMesh:
 
 func rocks() -> void:
 	for sd in 3:
-		_scatter(_rock_mesh(sd), 30, 11.0, 50.0, -40.0, 220.0, 0.4, 2.2, true, -1.5)
+		_scatter(_rock_mesh(sd), 30 if high else 12, 11.0, 50.0, -40.0, 220.0, 0.4, 2.2, true, -1.5)
 
 func rubble(list: Array) -> void:
 	var mesh := _rock_mesh(7)
