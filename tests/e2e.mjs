@@ -125,6 +125,14 @@ await phones[0].evaluate(() => __ctrl.press(4, false));
 await tv.waitForTimeout(3500);
 ok((await G(() => __game.phase)) === 'win', 'AÇÃO no altar termina o capítulo');
 await tv.screenshot({ path: 'shots/tv-win.png' });
+// 9) no fim, JOGAR DE NOVO no telemóvel recomeça o capítulo
+await tv.waitForTimeout(500);
+const again = await phones[0].evaluate(() => ({ text: document.querySelector('#btn-start').textContent, visible: !document.querySelector('#s-lobby').classList.contains('hidden') }));
+await phones[0].evaluate(() => document.querySelector('#btn-start').click());
+await tv.waitForFunction(() => __game.phase === 'play', null, { timeout: 120000 }).catch(() => {});
+const rs = await G(() => ({ phase: __game.phase, relics: __game.relicsFound, z: __game.players[0].pos.z, win: !document.querySelector('#win').classList.contains('hidden') }));
+ok(again.visible && again.text === 'JOGAR DE NOVO' && rs.phase === 'play' && rs.relics === 0 && rs.z < 10 && !rs.win,
+  `JOGAR DE NOVO recomeça o capítulo (botão="${again.text}", fase=${rs.phase}, z=${rs.z.toFixed(1)})`);
 console.log('fps (swiftshader, sem GPU):', await tv.$eval('#fps', (e) => e.textContent));
 ok(errs.length === 0, 'sem erros de JavaScript' + (errs.length ? ':\n' + errs.join('\n') : ''));
 await b.close();

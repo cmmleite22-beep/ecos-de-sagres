@@ -163,7 +163,7 @@ export class Game {
     });
     net.on('msg', (id, m) => {
       const p = this.players.find((q) => q.id === id);
-      if (m.t === 'start') this.startGame();
+      if (m.t === 'start') { if (this.phase === 'win') this.restart(); else this.startGame(); }
       if (m.t === 'char' && p && this.phase === 'lobby') this.setChar(p, m.char);
       if (m.t === 'ping') net.send(id, { t: 'pong', ts: m.ts });
     });
@@ -394,6 +394,27 @@ export class Game {
     this.queueLines('win');
     for (const p of this.players) { this.net.send(p.id, { t: 'buzz', ms: 300 }); this.sendState(p); }
     setTimeout(() => this.hud.showWin(this.players, this.relicsFound, this.relicsTotal, this.elapsed), 2500);
+  }
+
+  // Recomeçar o capítulo depois de o terminar (o Capítulo 2 ainda não existe)
+  restart() {
+    if (this.phase !== 'win') return;
+    this.level.group.traverse((o) => o.geometry?.dispose());
+    this.scene.remove(this.level.group);
+    for (const e of this.enemies.list) this.scene.remove(e.model.root);
+    this.world = new PhysicsWorld();
+    this.level = new Level1(this.scene, this.world, this.mats, this.quality);
+    this.enemies = new Enemies(this.scene, this.world, ENEMY_SPOTS);
+    this.relicsTotal = this.level.totalRelics; this.relicsFound = 0;
+    this.cpZ = -10; this.elapsed = 0;
+    this.dialogQueue.length = 0; this.hud.dialog(null);
+    this.hud.hideWin(); this.hud.setRelics(0, this.relicsTotal);
+    for (const p of this.players) { p.relics = 0; p.kills = 0; p.hp = MAX_HP; p.dead = false; this.respawn(p); }
+    this.phase = 'play';
+    this.hud.toast('CAPÍTULO 1 — O TEMPLO DAS MARÉS', 3000);
+    this.queueLines('intro');
+    for (const p of this.players) this.sendState(p);
+    this.syncLobby();
   }
 
   shoot(p) {
