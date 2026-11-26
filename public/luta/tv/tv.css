@@ -1,0 +1,33 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #07060a; color: #f5ead0; font-family: system-ui, sans-serif; }
+#stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+#c { width: 100vw; height: 56.25vw; max-height: 100vh; max-width: 177.78vh; display: block; }
+#boot-err { display: none; position: fixed; left: 8px; bottom: 8px; z-index: 99; color: #f88; font: 14px monospace; white-space: pre-wrap; max-width: 90vw; }
+#fps { position: fixed; right: 8px; bottom: 6px; font: 12px monospace; color: rgba(255,255,255,0.45); z-index: 5; }
+
+#lobby { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 3vh; pointer-events: none; z-index: 3; }
+#lobby.hidden { display: none; }
+.title { text-align: center; text-shadow: 0 4px 0 #120c0a, 0 0 30px rgba(0,0,0,0.6); }
+.title h1 { font-family: "Russo One", "Arial Black", Impact, sans-serif; font-size: 6.2vh; letter-spacing: 0.06em; color: #ffcf3a; -webkit-text-stroke: 2px #120c0a; }
+.title h1 span { color: #2bd4cf; }
+.title p { font-size: 2.2vh; opacity: 0.9; margin-top: 0.4vh; }
+.panel { margin-top: 2vh; background: rgba(10,8,14,0.78); border: 2px solid rgba(255,207,58,0.5); border-radius: 18px; padding: 2.2vh 2.6vh; width: min(92vw, 120vh); backdrop-filter: blur(4px); }
+.join { display: flex; gap: 3vh; align-items: center; }
+#qr { width: 20vh; height: 20vh; background: #fff; border-radius: 10px; flex: none; }
+#qr svg { width: 100%; height: 100%; display: block; }
+.how .label { font-size: 2vh; opacity: 0.75; }
+.how .url { font-family: monospace; font-size: 2.3vh; color: #ffe9a0; margin: 0.4vh 0 1.2vh; word-break: break-all; }
+#room-code { font-family: "Russo One", Impact, sans-serif; font-size: 7.5vh; letter-spacing: 0.25em; color: #2bd4cf; line-height: 1.1; }
+#ws-status { font-size: 1.8vh; opacity: 0.7; }
+.cast-only { display: none; font-size: 2.1vh; margin-top: 1vh; }
+body.static .cast-only { display: block; }
+body.static .code-l, body.static #room-code, body.static #ws-status { display: none; }
+#plist { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2vh; margin-top: 2vh; }
+#plist li { border-left: 6px solid var(--c, #666); background: rgba(255,255,255,0.06); padding: 1vh 1.2vh; border-radius: 8px; display: flex; flex-direction: column; }
+#plist li b { font-size: 2.3vh; }
+#plist li span { font-size: 1.8vh; color: var(--c); }
+#plist li em { font-size: 1.5vh; opacity: 0.65; font-style: normal; }
+#plist li.empty { grid-column: 1 / -1; border-left-color: transparent; opacity: 0.75; font-size: 2vh; }
+.stage { margin-top: 1.6vh; font-size: 2vh; opacity: 0.85; }
+.stage b { color: #ffe9a0; }
+#start-hint { margin-top: 0.8vh; font-size: 2.4vh; color: #ffcf3a; font-weight: 700; }

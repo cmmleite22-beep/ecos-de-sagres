@@ -143,5 +143,6 @@ server.listen(PORT, () => {
   console.log(`\n  Ecos de Sagres a correr na porta ${PORT}`);
   console.log(`  TV:      http://localhost:${PORT}/tv/`);
   for (const ip of ips) console.log(`  Comando: http://${ip}:${PORT}/controller/`);
+  console.log(`\n  Fúria Atlântica (luta) — TV: http://localhost:${PORT}/luta/tv/`);
   console.log('');
 });

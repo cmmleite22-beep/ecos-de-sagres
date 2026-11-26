@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fúria Atlântica — TV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap">
+<link rel="stylesheet" href="tv.css">
+<script>
+  window.IS_CAST = /CrKey/i.test(navigator.userAgent) || new URLSearchParams(location.search).has('cast');
+  if (window.IS_CAST) document.write('<script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"><\/script>');
+</script>
+<script>
+  // Arranca o receiver Cast antes do jogo; as mensagens que chegarem antes ficam em fila.
+  if (window.IS_CAST) {
+    try {
+      var NS = 'urn:x-cast:pt.furiaatlantica.game';
+      var ctx = cast.framework.CastReceiverContext.getInstance();
+      window.__castQ = [];
+      window.__castSink = function (ev) { window.__castQ.push(ev); };
+      ctx.addCustomMessageListener(NS, function (ev) { window.__castSink({ kind: 'msg', ev: ev }); });
+      ctx.addEventListener(cast.framework.system.EventType.SENDER_DISCONNECTED, function (ev) { window.__castSink({ kind: 'bye', ev: ev }); });
+      var opts = new cast.framework.CastReceiverOptions();
+      opts.disableIdleTimeout = true; opts.skipPlayersLoad = true; opts.maxInactivity = 3600;
+      opts.customNamespaces = {}; opts.customNamespaces[NS] = cast.framework.system.MessageType.JSON;
+      ctx.start(opts);
+      window.__castCtx = ctx;
+    } catch (e) { window.__castErr = String(e && e.message || e); }
+  }
+  window.addEventListener('error', function (e) {
+    var b = document.getElementById('boot-err'); if (!b) return;
+    b.style.display = 'block'; b.textContent += 'Erro: ' + (e.message || e.type) + '\n';
+  }, true);
+</script>
+<script src="../../vendor/qrcode.js"></script>
+</head>
+<body>
+<pre id="boot-err"></pre>
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div id="lobby">
+  <div class="title">
+    <h1>FÚRIA <span>ATLÂNTICA</span></h1>
+    <p>Luta 1 contra 1 · o telemóvel é o comando</p>
+  </div>
+  <div class="panel">
+    <div class="join">
+      <div id="qr"></div>
+      <div class="how">
+        <p class="label">Entra com o telemóvel</p>
+        <p class="url" id="join-url"></p>
+        <p class="label code-l">Código da sala</p>
+        <div id="room-code">····</div>
+        <p id="ws-status">A ligar ao servidor…</p>
+        <p class="cast-only">Abre este endereço no Chrome do telemóvel e toca em <b>Ligar ao Chromecast</b>.</p>
+      </div>
+    </div>
+    <ul id="plist"></ul>
+    <p class="stage">Cenário: <b id="stage-name"></b></p>
+    <p id="start-hint"></p>
+  </div>
+</div>
+<div id="fps"></div>
+<script type="module" src="main.js"></script>
+</body>
+</html>
