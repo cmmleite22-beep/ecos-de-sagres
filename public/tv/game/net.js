@@ -40,22 +40,16 @@ export class Net {
 
   // ---------- Cast (Web Receiver) ----------
   startCast() {
-    if (!window.cast || !cast.framework) return;
-    const ctx = cast.framework.CastReceiverContext.getInstance();
-    const NS = CONFIG.CAST_NAMESPACE;
-    ctx.addCustomMessageListener(NS, (ev) => {
-      const m = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
+    const ctx = window.__castCtx; // arrancado cedo em index.html
+    if (!ctx) { if (window.__castErr) this.emit('cast-error', window.__castErr); return; }
+    const handle = ({ kind, ev }) => {
+      if (kind === 'bye') { this.dispatch({ t: 'leave', id: 'c_' + ev.senderId }); return; }
+      let m; try { m = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data; } catch { return; }
       this.dispatch({ ...m, id: 'c_' + ev.senderId, _castSender: ev.senderId });
-    });
-    ctx.addEventListener(cast.framework.system.EventType.SENDER_DISCONNECTED, (ev) => {
-      this.dispatch({ t: 'leave', id: 'c_' + ev.senderId });
-    });
-    const opts = new cast.framework.CastReceiverOptions();
-    opts.disableIdleTimeout = true;            // um jogo não é um vídeo: não fechar por inatividade
-    opts.skipPlayersLoad = true;               // não precisamos do leitor de media
-    opts.customNamespaces = { [NS]: cast.framework.system.MessageType.JSON };
-    opts.maxInactivity = 3600;
-    ctx.start(opts);
+    };
+    const q = window.__castQ || [];
+    window.__castSink = handle;
+    q.splice(0).forEach(handle);
     this.castCtx = ctx;
     this.emit('cast', true);
   }

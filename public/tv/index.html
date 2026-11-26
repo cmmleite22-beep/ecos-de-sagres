@@ -10,12 +10,40 @@
   window.IS_CAST = /CrKey/i.test(navigator.userAgent) || new URLSearchParams(location.search).has('cast');
   if (window.IS_CAST) document.write('<script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"><\/script>');
 </script>
+<script>
+  // Arranca o receiver Cast logo aqui, antes de carregar o jogo (três.js é pesado): assim o
+  // telemóvel não desiste à espera. As mensagens que chegarem antes do jogo ficam em fila.
+  window.__castErr = null;
+  if (window.IS_CAST) {
+    try {
+      var NS = 'urn:x-cast:pt.ecosdesagres.game';
+      var ctx = cast.framework.CastReceiverContext.getInstance();
+      window.__castQ = [];
+      window.__castSink = function (ev) { window.__castQ.push(ev); };
+      ctx.addCustomMessageListener(NS, function (ev) { window.__castSink({ kind: 'msg', ev: ev }); });
+      ctx.addEventListener(cast.framework.system.EventType.SENDER_DISCONNECTED, function (ev) { window.__castSink({ kind: 'bye', ev: ev }); });
+      var opts = new cast.framework.CastReceiverOptions();
+      opts.disableIdleTimeout = true;
+      opts.skipPlayersLoad = true;
+      opts.maxInactivity = 3600;
+      opts.customNamespaces = {}; opts.customNamespaces[NS] = cast.framework.system.MessageType.JSON;
+      ctx.start(opts);
+      window.__castCtx = ctx;
+    } catch (e) { window.__castErr = String(e && e.message || e); }
+  }
+  // Mostra no ecrã erros que impeçam o jogo de arrancar (útil para diagnosticar na TV).
+  window.addEventListener('error', function (e) {
+    var b = document.getElementById('boot-err'); if (!b) return;
+    b.style.display = 'block'; b.textContent += 'Erro: ' + (e.message || e.type) + '\n';
+  }, true);
+</script>
 <script src="../vendor/qrcode.js"></script>
 <script type="importmap">
 { "imports": { "three": "../vendor/three.module.js", "three/addons/": "../vendor/addons/" } }
 </script>
 </head>
 <body>
+<pre id="boot-err" style="display:none;position:fixed;left:8px;bottom:8px;z-index:99;color:#f88;font:14px monospace;white-space:pre-wrap;max-width:90vw"></pre>
 <canvas id="c"></canvas>
 <div id="views"></div>
 
