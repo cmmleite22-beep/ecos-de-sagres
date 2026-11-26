@@ -183,6 +183,7 @@ export class Game {
   addPlayer(id, name, charId) {
     const known = this.players.find((p) => p.id === id);
     if (known) { // o telemóvel voltou a pedir para entrar (resposta perdida): reenviar o estado
+      if (name && name !== known.name) known.name = name;
       this.net.send(id, { t: 'welcome', id, char: known.char.id, color: known.char.color, name: known.name });
       this.syncLobby(); this.sendState(known);
       return;
