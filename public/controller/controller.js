@@ -126,6 +126,22 @@ $('#btn-join').onclick = () => {
 $('#btn-start').onclick = () => transport?.send({ t: 'start' });
 
 // ---------------- Chromecast (Web Sender) ----------------
+function castErrorText(code) {
+  switch (code) {
+    case 'cancel': return 'A ligação foi cancelada (ou não apareceu nenhuma TV para escolher).';
+    case 'receiver_unavailable': return 'Nenhuma TV desta rede aceita o jogo. Desliga a TV da corrente 1 minuto e tenta outra vez.';
+    case 'timeout': return 'A TV não respondeu a tempo. Tenta outra vez.';
+    case 'session_error': return 'A TV não conseguiu abrir o jogo.';
+    case 'extension_missing': case 'api_not_initialized': return 'Este browser não suporta Chromecast. Abre no Google Chrome.';
+    default: return 'Não foi possível ligar ao Chromecast.';
+  }
+}
+{
+  const standalone = matchMedia('(display-mode: standalone)').matches;
+  const isChrome = /Chrome\//.test(navigator.userAgent) && !/EdgA|SamsungBrowser|OPR|Firefox|FxiOS|CriOS/.test(navigator.userAgent);
+  if (STATIC_MODE && standalone) { window.__envWarn = true; $('#cast-state').textContent = 'Abriste o atalho do ecrã inicial: abre antes o endereço no Chrome.'; }
+  else if (STATIC_MODE && !isChrome) { window.__envWarn = true; $('#cast-state').textContent = 'Para o Chromecast, abre esta página no Google Chrome.'; }
+}
 if (CONFIG.CAST_APP_ID !== 'CHANGE_ME') {
   window.__onGCastApiAvailable = (ok) => {
     if (!ok) return;
@@ -135,15 +151,33 @@ if (CONFIG.CAST_APP_ID !== 'CHANGE_ME') {
       autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED, // o 2.º telemóvel junta-se à mesma sessão
     });
     $('#btn-cast').classList.remove('hidden');
+    // Mostra se o telemóvel está a ver algum aparelho Cast na rede
+    const castInfo = () => {
+      if (window.__envWarn) return;
+      const st = ctx.getCastState();
+      $('#cast-state').textContent = st === cast.framework.CastState.NO_DEVICES_AVAILABLE
+        ? 'O telemóvel ainda não encontrou nenhum Chromecast nesta rede.'
+        : st === cast.framework.CastState.CONNECTED ? 'Ligado ao Chromecast.' : 'Chromecast encontrado na rede.';
+    };
+    ctx.addEventListener(cast.framework.CastContextEventType.CAST_STATE_CHANGED, castInfo);
+    castInfo();
     $('#btn-cast').onclick = async () => {
+      $('#join-err').textContent = '';
+      let step = 'pedido';
       try {
-        await ctx.requestSession();
+        const err = await ctx.requestSession(); // devolve um código de erro (ou nada) em vez de lançar, nalgumas versões
+        if (err) throw err;
+        step = 'sessão';
         const session = ctx.getCurrentSession();
+        if (!session) throw 'sem sessão';
         const name = $('#name').value.trim() || 'Jogador';
         store.set('ecos.name', name);
         transport = new CastTransport(session, name, myChar, onMessage);
         goFullscreen();
-      } catch (e) { $('#join-err').textContent = 'Não foi possível ligar ao Chromecast.'; }
+      } catch (e) {
+        const code = String(e?.code || e?.message || e);
+        $('#join-err').textContent = castErrorText(code) + ` (código: ${code}, passo: ${step})`;
+      }
     };
   };
   const s = document.createElement('script');
