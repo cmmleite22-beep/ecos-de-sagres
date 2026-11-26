@@ -1,0 +1,16 @@
+{
+  "name": "ecos-de-sagres",
+  "version": "0.1.0",
+  "description": "Jogo de aventura cooperativo para TV (Chromecast) com telemóveis como comando",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node tests/smoke.mjs"
+  },
+  "dependencies": {
+    "qrcode-generator": "1.4.4",
+    "three": "0.170.0",
+    "ws": "8.18.0"
+  }
+}

@@ -1,0 +1,12 @@
+import { createRequire } from 'node:module'; const { chromium } = createRequire(import.meta.url)('playwright');
+const b = await chromium.launch({ args: ['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
+const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
+const errs = [];
+p.on('console', m => { if (m.type() === 'error' || m.type()==='warning') errs.push(m.text()); });
+p.on('pageerror', e => errs.push('PAGEERR ' + e.message));
+await p.goto('http://localhost:8080/tv/?q=' + (process.argv[2]||'high'));
+await p.waitForTimeout(6000);
+await p.screenshot({ path: 'shots/tv-lobby.png' });
+console.log(errs.slice(0,20).join('\n'));
+console.log(await p.evaluate(() => document.getElementById('room-code').textContent + ' ' + document.getElementById('fps').textContent));
+await b.close();

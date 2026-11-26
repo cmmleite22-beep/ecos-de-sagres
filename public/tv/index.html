@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ecos de Sagres — TV</title>
+<link rel="stylesheet" href="tv.css">
+<script>
+  // Num Chromecast (user agent "CrKey") ou com ?cast=1 carrega o SDK do Web Receiver.
+  window.IS_CAST = /CrKey/i.test(navigator.userAgent) || new URLSearchParams(location.search).has('cast');
+  if (window.IS_CAST) document.write('<script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"><\/script>');
+</script>
+<script src="/vendor/qrcode.js"></script>
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.js", "three/addons/": "/vendor/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="views"></div>
+
+<div id="lobby">
+  <div class="panel">
+    <h1>ECOS DE SAGRES</h1>
+    <h2>Capítulo 1 — O Templo das Marés</h2>
+    <div class="join">
+      <div id="qr"></div>
+      <div>
+        <p>Entra com o telemóvel:</p>
+        <p class="url" id="join-url"></p>
+        <p>Código da sala</p>
+        <div id="room-code">····</div>
+        <p id="ws-status">A ligar ao servidor…</p>
+        <p id="cast-hint" style="display:none">Ou toca no ícone Cast na app para te ligares ao Chromecast.</p>
+      </div>
+    </div>
+    <div id="slots"></div>
+    <p id="start-hint"></p>
+  </div>
+</div>
+
+<div id="ingame" class="hidden">
+  <div id="players"></div>
+  <div id="relics">◆ 0 / 0</div>
+</div>
+<div id="dialog"></div>
+<div id="toast"></div>
+<div id="win" class="hidden">
+  <h1>PEÇA RECUPERADA</h1>
+  <h2>O primeiro fragmento do Astrolábio de Âmbar</h2>
+  <div id="win-stats"></div>
+</div>
+<div id="fps"></div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>

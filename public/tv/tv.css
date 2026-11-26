@@ -1,0 +1,79 @@
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0f0c; color: #f3ead6;
+  font-family: "Trebuchet MS", system-ui, sans-serif; }
+canvas#c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+.hidden { display: none !important; }
+/* margens "TV-safe": 5% */
+#lobby { position: fixed; inset: 5vh 5vw; display: flex; align-items: center; pointer-events: none; }
+.panel { width: 44vw; padding: 3vh 2.5vw; border-radius: 1.2vw;
+  background: linear-gradient(160deg, rgba(20,24,18,.88), rgba(40,30,16,.82));
+  border: 1px solid rgba(255,200,120,.25); box-shadow: 0 2vh 6vh rgba(0,0,0,.5); }
+h1 { font-size: 3.6vw; white-space: nowrap; letter-spacing: .35vw; color: #ffcf73; text-shadow: 0 .3vw 1vw rgba(0,0,0,.6);
+  font-family: Georgia, "Times New Roman", serif; }
+h2 { font-size: 1.5vw; font-weight: normal; opacity: .85; margin-bottom: 2.5vh; }
+.join { display: flex; gap: 2vw; align-items: center; }
+#qr { width: 13vw; height: 13vw; background: #fff; border-radius: .6vw; padding: .3vw; flex: none; }
+#qr svg { width: 100%; height: 100%; }
+.join p { font-size: 1.1vw; opacity: .85; margin: .3vh 0; }
+.join .url { font-family: monospace; font-size: 1.05vw; color: #ffd68a; opacity: 1; word-break: break-all; }
+#room-code { font-size: 4.2vw; font-weight: bold; letter-spacing: .6vw; color: #fff; font-family: monospace; }
+#slots { display: grid; grid-template-columns: 1fr 1fr; gap: 1vw; margin-top: 3vh; }
+.slot { padding: 1.2vh 1vw; border-radius: .6vw; background: rgba(255,255,255,.05); border: 2px dashed rgba(255,255,255,.15); }
+.slot.on { border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); }
+.slot b { display: block; font-size: 1.3vw; } .slot span { font-size: .95vw; opacity: .75; }
+#start-hint { margin-top: 2.5vh; font-size: 1.3vw; color: #ffcf73; animation: pulse 2s infinite; }
+@keyframes pulse { 50% { opacity: .5; } }
+#players { position: fixed; top: 5vh; left: 5vw; display: flex; gap: 1vw; }
+.pcard { padding: .8vh 1vw; border-radius: .6vw; background: rgba(0,0,0,.5); border-left: .35vw solid var(--c); min-width: 9vw; }
+.pcard b { display: block; font-size: 1.15vw; color: var(--c); }
+.pcard .hearts { color: #ff4d5e; font-size: 1.2vw; } .pcard .hearts i { color: rgba(255,255,255,.2); font-style: normal; }
+.pcard .rel { float: right; color: #ffd060; font-size: 1.1vw; }
+.pcard.dead { opacity: .45; }
+#relics { position: fixed; top: 5vh; right: 5vw; font-size: 2vw; color: #ffd060; background: rgba(0,0,0,.45);
+  padding: .6vh 1.2vw; border-radius: .6vw; }
+#dialog { position: fixed; left: 50%; bottom: 16vh; transform: translate(-50%, 2vh); max-width: 60vw;
+  padding: 1.4vh 1.8vw; background: rgba(0,0,0,.65); border-radius: .6vw; font-size: 1.5vw; opacity: 0;
+  transition: .35s; text-align: center; }
+#dialog.show { opacity: 1; transform: translate(-50%, 0); }
+#toast { position: fixed; top: 16vh; left: 50%; transform: translateX(-50%); font-size: 2.2vw; letter-spacing: .2vw;
+  color: #fff; text-shadow: 0 .2vw .8vw #000; opacity: 0; transition: .4s; font-family: Georgia, serif; }
+#toast.show { opacity: 1; }
+#win { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle, rgba(60,35,5,.75), rgba(0,0,0,.92)); animation: fade 1.2s; }
+#win h1 { font-size: 5vw; } #win h2 { font-size: 1.8vw; }
+#win-stats p { font-size: 1.5vw; text-align: center; margin: .6vh; } #win-stats .next { margin-top: 3vh; color: #ffcf73; }
+@keyframes fade { from { opacity: 0; } }
+#fps { position: fixed; bottom: 1vh; right: 1vw; font-size: .8vw; opacity: .35; }
+
+/* ---------- vistas de cada jogador ---------- */
+#views { position: fixed; inset: 0; pointer-events: none; }
+.view { position: absolute; outline: 2px solid rgba(0,0,0,.6); overflow: hidden; }
+.view .vig { position: absolute; inset: 0; opacity: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(200,0,0,.75)); }
+.view .vig.on { animation: hurt .6s ease-out; }
+.view .vig.low { opacity: .55; animation: pulse 1.2s infinite; }
+@keyframes hurt { from { opacity: 1; } to { opacity: 0; } }
+.cross { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.cross i { position: absolute; background: #fff; box-shadow: 0 0 3px #000; }
+.cross i:nth-child(1) { width: 2px; height: 1.2vmin; left: -1px; top: -2.2vmin; }
+.cross i:nth-child(2) { width: 2px; height: 1.2vmin; left: -1px; top: 1vmin; }
+.cross i:nth-child(3) { height: 2px; width: 1.2vmin; top: -1px; left: -2.2vmin; }
+.cross i:nth-child(4) { height: 2px; width: 1.2vmin; top: -1px; left: 1vmin; }
+.cross::after { content: ''; position: absolute; width: 4px; height: 4px; left: -2px; top: -2px; border-radius: 50%; background: var(--c); }
+.hitm { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 3vmin; color: #fff; opacity: 0; text-shadow: 0 0 4px #000; }
+.hitm.head { color: #ff4040; font-size: 4vmin; }
+.hitm.on { animation: hit .3s; }
+@keyframes hit { from { opacity: 1; transform: translate(-50%, -50%) scale(1.4); } to { opacity: 0; } }
+.dmgdir { position: absolute; left: 50%; top: 50%; width: 30vmin; height: 30vmin; opacity: 0;
+  border-top: 1vmin solid rgba(255,40,40,.9); border-radius: 50%; }
+.dmgdir.on { animation: hurt 1s; }
+.vbar { position: absolute; left: 3%; bottom: 4%; min-width: 28%; padding: .6vmin 1vmin; background: rgba(0,0,0,.45);
+  border-left: .5vmin solid var(--c); border-radius: .4vmin; }
+.vbar b { color: var(--c); font-size: 2vmin; }
+.vbar .vk { float: right; color: #ffd060; font-size: 1.8vmin; margin-left: 1vmin; }
+.hpbar { height: 1vmin; background: rgba(255,255,255,.15); border-radius: .5vmin; margin-top: .5vmin; overflow: hidden; }
+.hpbar div { height: 100%; width: 100%; background: linear-gradient(90deg, #5fd36a, #b6f07a); transition: width .2s; }
+.hpbar div.low { background: linear-gradient(90deg, #ff3b3b, #ff8a5a); }
+.view .dead { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+  background: rgba(30,0,0,.55); font-size: 3vmin; letter-spacing: .3vmin; }
+.ovlabel { position: absolute; left: 3%; top: 4%; font-size: 1.6vmin; opacity: .6; }
+#players { display: none; }
