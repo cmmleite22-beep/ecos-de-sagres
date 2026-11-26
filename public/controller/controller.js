@@ -34,6 +34,12 @@ class CastTransport {
       try { onMsg(typeof data === 'string' ? JSON.parse(data) : data); } catch {}
     });
     this.send({ t: 'join', name, char });
+    // se a TV ainda estava a carregar e a resposta não chegou, voltar a pedir
+    let tries = 0;
+    this.retry = setInterval(() => {
+      if (this.welcomed || ++tries > 10) { clearInterval(this.retry); return; }
+      this.send({ t: 'join', name, char: myChar });
+    }, 2000);
   }
   send(m) { this.session.sendMessage(CONFIG.CAST_NAMESPACE, m).catch(() => {}); }
 }
@@ -42,6 +48,7 @@ function onMessage(m) {
   switch (m.t) {
     case 'joined': break;
     case 'welcome':
+      if (transport) transport.welcomed = true;
       myChar = m.char; store.set('ecos.char', myChar);
       document.documentElement.style.setProperty('--c', m.color);
       $('#me').textContent = m.name;
@@ -173,6 +180,7 @@ if (CONFIG.CAST_APP_ID !== 'CHANGE_ME') {
         const name = $('#name').value.trim() || 'Jogador';
         store.set('ecos.name', name);
         transport = new CastTransport(session, name, myChar, onMessage);
+        show('s-lobby'); // não ficar no ecrã de entrada à espera da resposta da TV
         goFullscreen();
       } catch (e) {
         const code = String(e?.code || e?.message || e);

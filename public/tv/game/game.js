@@ -181,7 +181,13 @@ export class Game {
   }
 
   addPlayer(id, name, charId) {
-    if (this.players.find((p) => p.id === id)) return;
+    const known = this.players.find((p) => p.id === id);
+    if (known) { // o telemóvel voltou a pedir para entrar (resposta perdida): reenviar o estado
+      if (name && name !== known.name) known.name = name;
+      this.net.send(id, { t: 'welcome', id, char: known.char.id, color: known.char.color, name: known.name });
+      this.syncLobby(); this.sendState(known);
+      return;
+    }
     if (this.players.length >= 4) { this.net.send(id, { t: 'error', reason: 'Sala cheia' }); return; }
     const char = this.freeChar(charId);
     const cam = new THREE.PerspectiveCamera(72, 1, 0.05, 600);

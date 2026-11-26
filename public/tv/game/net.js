@@ -47,11 +47,12 @@ export class Net {
       let m; try { m = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data; } catch { return; }
       this.dispatch({ ...m, id: 'c_' + ev.senderId, _castSender: ev.senderId });
     };
+    // castCtx tem de existir antes de esvaziar a fila: as respostas (welcome/lobby) usam-no
+    this.castCtx = ctx;
+    this.emit('cast', true);
     const q = window.__castQ || [];
     window.__castSink = handle;
     q.splice(0).forEach(handle);
-    this.castCtx = ctx;
-    this.emit('cast', true);
   }
 
   dispatch(m) {
