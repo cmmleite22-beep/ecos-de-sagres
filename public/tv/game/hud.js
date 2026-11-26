@@ -41,7 +41,10 @@ export class Hud {
 
   setCastMode(on, staticMode) {
     $('#cast-hint').style.display = on || staticMode ? 'block' : 'none';
+    this.staticMode = !!staticMode;
     if (staticMode) {
+      const lbl = [...document.querySelectorAll('.join p')].find((p) => p.textContent.trim() === 'Código da sala');
+      if (lbl) lbl.style.display = 'none';
       // sem servidor: não há QR nem código; entra-se pelo botão Chromecast no telemóvel
       document.querySelector('.join').classList.add('static');
       const url = this.controllerUrl(null);
@@ -71,7 +74,8 @@ export class Hud {
       } else el.innerHTML = `<b>Jogador ${i + 1}</b><span>à espera…</span>`;
       slots.appendChild(el);
     }
-    $('#start-hint').textContent = list.length ? 'Carrega em COMEÇAR no telemóvel' : 'Lê o código QR com o telemóvel para entrar';
+    $('#start-hint').textContent = list.length ? 'Carrega em COMEÇAR no telemóvel'
+      : this.staticMode ? 'Abre o comando no telemóvel e toca em "Ligar ao Chromecast"' : 'Lê o código QR com o telemóvel para entrar';
     // barra de jogadores durante o jogo
     const bar = $('#players');
     bar.innerHTML = list.map((p) => `
