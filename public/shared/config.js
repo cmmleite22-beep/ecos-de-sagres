@@ -3,7 +3,7 @@ export const CONFIG = {
   // ID da aplicação Cast registada em https://cast.google.com/publish
   // Substitui pelo teu ID depois de registares o receiver (custa 5 USD, uma vez).
   // Enquanto estiver 'CHANGE_ME', o botão Chromecast fica escondido e usa-se o modo por código.
-  CAST_APP_ID: 'CHANGE_ME',
+  CAST_APP_ID: '50E7A1F3',
   // Canal de mensagens personalizado entre telemóveis e Chromecast
   CAST_NAMESPACE: 'urn:x-cast:pt.ecosdesagres.game',
   // Endereço do servidor WebSocket. Vazio = mesma origem da página.
