@@ -75,6 +75,15 @@ clearInterval(aim);
 await phones[0].evaluate(() => __ctrl.press(8, false));
 const after = await G(() => ({ hp: __game.enemies.list[1].hp, dead: __game.enemies.list[1].dead, kills: __game.players[0].kills }));
 ok(after.hp < before || after.dead, `tiro acerta no mercenário (hp ${before} → ${after.hp}, abatido=${after.dead})`);
+// 3b) mira automática do jogo: apontar ~5° ao lado do inimigo e disparar — o tiro tem de acertar
+const aa0 = await G(() => { const p = __game.players[0], e = __game.enemies.list[0];
+  e.hp = 3; e.dead = false; p.hp = 100; p.pos.set(-3.5, 3.05, 59); p.vel.set(0, 0, 0);
+  const dx = e.pos.x - p.pos.x, dz = e.pos.z - p.pos.z; p.yaw = Math.atan2(dx, dz) + 0.09; p.pitch = 0; return e.hp; });
+await phones[0].evaluate(() => __ctrl.press(8, true));
+await waitSim(0.8);
+await phones[0].evaluate(() => __ctrl.press(8, false));
+const aa1 = await G(() => ({ hp: __game.enemies.list[0].hp, dead: __game.enemies.list[0].dead }));
+ok(aa1.hp < aa0 || aa1.dead, `mira automática corrige o tiro (hp ${aa0} → ${aa1.hp})`);
 await tv.screenshot({ path: 'shots/tv-shooting.png' });
 // 4) os mercenários disparam de volta
 await tp(60, 3.1, null, 300);
@@ -88,10 +97,13 @@ ok(await G(() => __game.level.gateLatched), 'duas placas abrem o portão');
 await tv.screenshot({ path: 'shots/tv-gate-open.png' });
 // 6) escalar trepadeiras
 await tp(76.8, 3.1, null, 300);
-for (const ph of phones) await ph.evaluate(() => { __ctrl.input.y = 1; __ctrl.sendInput(true); });
+// a andar (com o joystick até ao fim o jogador corre e passaria do topo antes de largar)
+for (const ph of phones) await ph.evaluate(() => { __ctrl.input.y = 0.6; __ctrl.sendInput(true); });
 await waitSim(0.8);
 await tv.screenshot({ path: 'shots/tv-climbing.png' });
-await tv.waitForFunction(() => __game.players.every((p) => p.pos.y > 8.9 && p.onGround), null, { timeout: 120000, polling: 50 }).catch(() => {});
+await tv.waitForFunction(() => __game.players.every((p) => p.pos.y > 8.9 && p.onGround), null, { timeout: 120000, polling: 50 }).catch(async () => {
+  console.log('escalada (diagnóstico):', await G(() => JSON.stringify(__game.players.map((p) => ({ pos: p.pos.toArray().map((v) => +v.toFixed(2)), climbing: p.climbing, ground: p.onGround, input: p.input, dead: p.dead, hp: p.hp, phase: __game.phase })))));
+});
 for (const ph of phones) await ph.evaluate(() => { __ctrl.input.y = 0; __ctrl.sendInput(true); });
 s = await state();
 ok(s.every((p) => p.y > 8.9), `escalada até ao topo da falésia (y ${s.map((p) => p.y)})`);

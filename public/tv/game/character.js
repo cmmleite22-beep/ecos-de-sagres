@@ -1,5 +1,6 @@
 // Personagem jogável: modelo procedural (sem ficheiros) com animação de andar, correr, saltar e escalar.
 import * as THREE from 'three';
+import { bakeGroup } from './scenery.js';
 
 export function buildCharacter(colorHex, variant = 0) {
   const color = new THREE.Color(colorHex);
@@ -85,7 +86,7 @@ export function buildCharacter(colorHex, variant = 0) {
 
   let phase = 0;
   const anim = {
-    root, body, ring,
+    root, body, ring, limbs: [armL, armR, legL, legR], bake() { bakeGroup(body, this.limbs); },
     update(dt, st) {
       // st: { speed, onGround, climbing, vy, hurt }
       const k = Math.min(1, st.speed / 7.5);

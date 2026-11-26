@@ -4,6 +4,8 @@
 import * as THREE from 'three';
 import { Collider } from './physics.js';
 import { boxGeo } from './textures.js';
+import { Scenery, bakeGroup } from './scenery.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Mercenários do Consórcio (equipa avançada): [x, y do chão, z, direção]
 export const ENEMY_SPOTS = [
@@ -17,7 +19,7 @@ export const LINES = {
   intro:   [['Ana', 'O mapa do Infante aponta para aqui. O Templo das Marés... existe mesmo.'],
             ['Tito', 'Existe, e o Consórcio vem a caminho. Despachem-se.']],
   stairs:  [['Inês', 'Inscrições em tâmil antigo e... português do século XV? Isto não faz sentido.']],
-  pillars: [['Rafa', 'Os pilares aguentam. Saltem com balanço — corram antes do salto!']],
+  pillars: [['Rafa', 'Os pilares aguentam. Saltem de um para o outro — empurrem o joystick até ao fim para correr.']],
   spikes:  [['Tito', 'Lanças na pedra. E aqueles ali ao fundo são do Consórcio — já cá estão!'],
             ['Ana', 'Equipa avançada. Abatam-nos e passem as lanças com ritmo.']],
   plates:  [['Inês', '"Dois devem pesar onde um não chega." As placas abrem o portão.']],
@@ -70,6 +72,7 @@ export class Level1 {
     glow.scale.set(1.6, 1.6, 1); glow.position.y = 1.4; g.add(glow);
     g.position.set(x, y, z);
     this.group.add(g);
+    bakeGroup(g, [flame, glow]);
     const maxLights = this.quality === 'high' ? 10 : 4;
     let pl = null;
     if (light && this.lights.length < maxLights) {
@@ -105,6 +108,7 @@ export class Level1 {
     glow.scale.set(1.3, 1.3, 1); glow.position.y = 0.3; g.add(glow);
     g.position.set(x, y + 0.3, z);
     this.group.add(g);
+    bakeGroup(g, [glow]);
     this.relics.push({ g, pos: new THREE.Vector3(x, y + 0.5, z), taken: false, baseY: y + 0.3 });
     this.totalRelics++;
   }
@@ -122,15 +126,8 @@ export class Level1 {
     water.receiveShadow = true;
     this.group.add(water); this.water = water;
 
-    const mountainMat = new THREE.MeshStandardMaterial({ color: 0x3d5a3a, roughness: 1, flatShading: true });
-    for (let i = 0; i < 14; i++) {
-      const h = 40 + Math.random() * 50;
-      const m = new THREE.Mesh(new THREE.ConeGeometry(25 + Math.random() * 20, h, 7), mountainMat);
-      const side = i % 2 ? 1 : -1;
-      m.position.set(side * (70 + Math.random() * 60), h / 2 - 5, -20 + i * 18 + Math.random() * 10);
-      this.group.add(m);
-    }
-    this.buildJungle();
+    this.scenery = new Scenery(this.group, M, Q);
+    this.scenery.build();
 
     // ===== Secção 0: acampamento (z -10..22) =====
     this.block(0, -3, 6, 30, 3, 32, M.sand);
@@ -140,6 +137,10 @@ export class Level1 {
     this.block(-2.6, 1, 10.1, 0.8, 0.8, 0.8, M.wood);
     this.block(4, 0, 12, 1.2, 0.9, 0.9, M.wood);
     this.campfire(0, 0, 8);
+    for (const [x, z] of [[-6.5, 11], [-7.2, 10.2], [7.5, 9.5]]) this.barrel(x, 0, z);
+    // mesa de campanha
+    for (const [x, z] of [[2.1, 0.8], [3.9, 0.8], [2.1, 1.6], [3.9, 1.6]]) this.block(x, 0, z, 0.08, 0.8, 0.08, M.wood, { collide: false });
+    this.block(3, 0.8, 1.2, 2.2, 0.08, 1.1, M.wood, { collide: false });
     this.relic(-2.6, 1.8, 10.1);
     this.relic(7, 0, 14);
     this.checkpoint(-10, [0, 0, 2]);
@@ -153,7 +154,7 @@ export class Level1 {
     this.block(-6, 0, 25, 4, 3, 6, M.mossStone);  // muros laterais da escadaria
     this.block(6, 0, 25, 4, 3, 6, M.mossStone);
     for (const x of [-3.5, 3.5]) this.column(x, 3, 33.3, 7);
-    this.block(0, 10, 33.3, 9, 1.2, 1.4, M.mossStone, { collide: false }); // lintel
+    this.block(0, 10, 33.3, 9, 1.2, 1.4, M.carved, { collide: false, uv: 0.35 }); // lintel gravado
     this.torch(-5, 3, 30.5); this.torch(5, 3, 30.5);
     this.wall(-8.5, 3, 31, 1, 8, 6); this.wall(8.5, 3, 31, 1, 8, 6);
     this.relic(6, 3, 29);
@@ -161,10 +162,14 @@ export class Level1 {
     this.say(26, 'stairs');
 
     // ===== Pilares sobre a água (z 34..46) =====
-    this.block(0, -8, 41, 2, 1, 2, null, { collide: false });
-    const pillars = [[0, 37], [-1.6, 40.2], [1.2, 43.4]];
-    for (const [x, z] of pillars) this.block(x, -6, z, 1.8, 9, 1.8, M.mossStone);
-    this.relic(-1.6, 3, 40.2);
+    // pilares largos e próximos: o salto faz-se a andar (fácil com o comando do telemóvel)
+    const pillars = [[0, 36.3], [-0.9, 39.9], [0.7, 43.5]];
+    for (const [x, z] of pillars) {
+      this.block(x, -6, z, 2.6, 9, 2.6, M.mossStone);
+      this.block(x, 2.75, z, 2.9, 0.25, 2.9, M.stone, { collide: false }); // capitel (topo em y=3)
+      this.scenery.foamRing(x, z, 1.9);
+    }
+    this.relic(-0.9, 3, 39.9);
     this.wall(-8.5, -6, 40, 1, 20, 12); this.wall(8.5, -6, 40, 1, 20, 12);
     this.say(33.5, 'pillars');
 
@@ -180,9 +185,9 @@ export class Level1 {
     this.plate(-4.5, 3, 64.5); this.plate(4.5, 3, 64.5);
     // portão com dois muros laterais
     this.block(-4.75, 3, 70, 4.5, 6, 1, M.mossStone); this.block(4.75, 3, 70, 4.5, 6, 1, M.mossStone);
-    this.gate = this.block(0, 3, 70, 5, 6, 1.1, M.stone);
+    this.gate = this.block(0, 3, 70, 5, 6, 1.1, M.carved, { uv: 0.4 });
     this.gate.closedY = this.gate.mesh.position.y;
-    this.block(0, 9, 70, 14, 1.4, 1.6, M.mossStone, { collide: false });
+    this.block(0, 9, 70, 14, 1.4, 1.6, M.carved, { collide: false, uv: 0.35 });
     this.torch(-6.3, 3, 66); this.torch(6.3, 3, 66);
     this.checkpoint(47, [0, 3, 47.5]);
     this.say(49, 'spikes'); this.say(61, 'plates');
@@ -253,6 +258,95 @@ export class Level1 {
     this.say(150, 'altar');
 
     this.finalZ = 160;
+    this.decorate();
+    for (const o of [this.water, this.gate.mesh, this.mover.mesh, this.boulder.mesh, ...this.plates.map((p) => p.m)]) o.userData.dynamic = true;
+    this.mergeStatic();
+  }
+
+  // Junta todos os blocos estáticos com o mesmo material numa só malha: muito menos chamadas de
+  // desenho por frame (o que mais pesa num Chromecast/TV), sem mudar o aspeto.
+  mergeStatic() {
+    const buckets = new Map();
+    for (const o of [...this.group.children]) {
+      if (!o.isMesh || o.isInstancedMesh || o.userData.dynamic || !o.geometry.attributes.uv || o.material.transparent || o.material.vertexColors) continue;
+      const key = o.material.uuid + (o.castShadow ? 'c' : '');
+      if (!buckets.has(key)) buckets.set(key, { mat: o.material, cast: o.castShadow, list: [] });
+      o.updateMatrix();
+      let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
+      g.applyMatrix4(o.matrix);
+      buckets.get(key).list.push(g);
+      this.group.remove(o);
+    }
+    for (const { mat, cast, list } of buckets.values()) {
+      const m = new THREE.Mesh(mergeGeometries(list), mat);
+      m.castShadow = cast; m.receiveShadow = true;
+      this.group.add(m);
+    }
+  }
+
+  // trepadeiras penduradas, entulho e estátuas (só visual, sem colisão)
+  decorate() {
+    const r = (() => { let s = 99; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); })();
+    const vines = [];
+    const hang = (x, yTop, z0, z1, rot, n, maxLen) => {
+      for (let i = 0; i < n; i++) vines.push([x, yTop + 0.05, z0 + r() * (z1 - z0), 1 + r() * maxLen, rot]);
+    };
+    hang(-6.94, 8, 46.5, 69, Math.PI / 2, 14, 3.5);   // pátio
+    hang(6.94, 8, 46.5, 69, -Math.PI / 2, 14, 3.5);
+    hang(-5.95, 6, 22, 28, Math.PI / 2, 5, 2.5);     // escadaria
+    hang(5.95, 6, 22, 28, -Math.PI / 2, 5, 2.5);
+    for (let i = 0; i < 12; i++) {                    // corredor (topo desce com o chão)
+      const z = 105 + r() * 34, top = this.floorAt(z) + 4, side = i % 2 ? 1 : -1;
+      vines.push([side * 2.94, top, z, 1 + r() * 2.2, side > 0 ? -Math.PI / 2 : Math.PI / 2]);
+    }
+    hang(-10.94, 12, 145, 167, Math.PI / 2, 12, 5);   // câmara do altar
+    hang(10.94, 12, 145, 167, -Math.PI / 2, 12, 5);
+    for (let i = 0; i < 8; i++) vines.push([-10 + r() * 20, 12, 167.94, 1 + r() * 5, Math.PI]);
+    this.scenery.hangingVines(vines);
+
+    const rub = [];
+    const pile = (x, y, z, n, spread, sc) => { for (let i = 0; i < n; i++) rub.push([x + (r() - 0.5) * spread, y, z + (r() - 0.5) * spread, sc * (0.4 + r())]); };
+    pile(-6.3, 3, 47.5, 4, 1.2, 0.3); pile(6.3, 3, 68.5, 4, 1.2, 0.3);
+    pile(-10.2, 3, 146, 5, 1.6, 0.35); pile(10.2, 3, 166.5, 5, 1.6, 0.35); pile(-10, 3, 158, 3, 1, 0.3);
+    pile(-9, 0, -6, 6, 3, 0.4); pile(9, 0, 18, 5, 3, 0.4);
+    this.scenery.rubble(rub);
+
+    // estátuas de guardiões junto à escadaria e no altar
+    for (const [x, y, z, ry] of [[-5.2, 3, 33.5, 0], [5.2, 3, 33.5, 0], [-9.8, 3, 162, Math.PI / 2], [9.8, 3, 162, -Math.PI / 2]]) this.statue(x, y, z, ry);
+    // coluna caída no pátio
+    const fallen = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 4, 12), this.mats.mossStone);
+    fallen.rotation.set(0, 0.4, Math.PI / 2); fallen.position.set(-5.6, 3.5, 67.5); fallen.castShadow = fallen.receiveShadow = true;
+    this.group.add(fallen);
+  }
+
+  // estela de pedra gravada com remate em pirâmide (marca a entrada do templo e o altar)
+  statue(x, y, z, ry) {
+    const M = this.mats, g = new THREE.Group();
+    const add = (geo, mat, py) => { const m = new THREE.Mesh(geo, mat); m.position.y = py; m.castShadow = m.receiveShadow = true; g.add(m); return m; };
+    add(boxGeo(1.3, 0.5, 1.3, 0.5), M.stone, 0.25);
+    add(boxGeo(1.05, 0.25, 1.05, 0.5), M.mossStone, 0.62);
+    const shaft = new THREE.BoxGeometry(0.8, 3, 0.55, 1, 4, 1);
+    const sp = shaft.attributes.position;
+    for (let i = 0; i < sp.count; i++) { const k = 1 - (sp.getY(i) + 1.5) / 3 * 0.18; sp.setX(i, sp.getX(i) * k); sp.setZ(i, sp.getZ(i) * k); }
+    shaft.computeVertexNormals();
+    add(shaft, M.carved, 2.25);
+    const cap = add(new THREE.ConeGeometry(0.47, 0.6, 4), M.stone, 4.05);
+    cap.rotation.y = Math.PI / 4; cap.scale.z = 0.7;
+    g.position.set(x, y, z); g.rotation.y = ry;
+    this.group.add(g);
+    bakeGroup(g);
+    this.world.add(Collider.fromCenter(x, y + 1.5, z, 1.3, 3, 1.3));
+  }
+
+  barrel(x, y, z) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 1, 14), this.mats.wood);
+    m.position.set(x, y + 0.5, z); m.castShadow = m.receiveShadow = true; this.group.add(m);
+    for (const h of [0.15, 0.85]) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.385, 0.025, 4, 18), this.mats.spike);
+      ring.rotation.x = Math.PI / 2; ring.position.set(x, y + h, z); this.group.add(ring);
+    }
+    this.world.add(Collider.fromCenter(x, y + 0.5, z, 0.76, 1, 0.76));
   }
 
   column(x, y0, z, h) {
@@ -279,7 +373,7 @@ export class Level1 {
       s.position.set(x + Math.cos(a) * 0.5, y + 0.1, z + Math.sin(a) * 0.5); this.group.add(s);
     }
     const flame = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.8, 8), this.mats.flame);
-    flame.position.set(x, y + 0.4, z); this.group.add(flame);
+    flame.position.set(x, y + 0.4, z); flame.userData.dynamic = true; this.group.add(flame);
     const pl = new THREE.PointLight(0xff7a2a, 10, 12, 1.5); pl.position.set(x, y + 1, z);
     this.group.add(pl); this.lights.push(pl);
     this.torches.push({ flame, glow: null, pl, seed: 3 });
@@ -296,6 +390,7 @@ export class Level1 {
       s.position.set(-0.7 + i * 0.47, 0.4, -0.7 + j * 0.47); s.castShadow = true; spikes.add(s);
     }
     g.add(spikes);
+    bakeGroup(spikes);
     g.position.set(x, y, z); this.group.add(g);
     this.spikes.push({ spikes, x, y, z, offset, up: false });
   }
@@ -310,79 +405,23 @@ export class Level1 {
   }
 
   vines(cx, y0, z, w, h) {
-    const geo = new THREE.PlaneGeometry(0.22, h, 1, 8);
-    for (let i = 0; i < 16; i++) {
+    const geo = new THREE.PlaneGeometry(0.5, h, 1, 6);
+    for (let i = 0; i < 18; i++) {
       const v = new THREE.Mesh(geo, this.mats.vine);
-      v.position.set(cx - w / 2 + (i / 15) * w, y0 + h / 2 + Math.random() * 0.3, z - 0.05 - Math.random() * 0.1);
-      v.rotation.z = (Math.random() - 0.5) * 0.15;
+      v.position.set(cx - w / 2 + (i / 17) * w, y0 + h / 2 + Math.random() * 0.3, z - 0.05 - Math.random() * 0.1);
+      v.rotation.z = (Math.random() - 0.5) * 0.12;
       this.group.add(v);
     }
-    const leafGeo = new THREE.IcosahedronGeometry(0.16, 0);
-    const leaves = new THREE.InstancedMesh(leafGeo, this.mats.leaves, 120);
-    const m4 = new THREE.Matrix4();
-    for (let i = 0; i < 120; i++) {
-      m4.makeTranslation(cx - w / 2 + Math.random() * w, y0 + Math.random() * h, z - 0.12);
-      leaves.setMatrixAt(i, m4);
+    const card = new THREE.PlaneGeometry(0.9, 0.9);
+    const leaves = new THREE.InstancedMesh(card, this.mats.bush, 40);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3();
+    for (let i = 0; i < 40; i++) {
+      p.set(cx - w / 2 - 0.4 + Math.random() * (w + 0.8), y0 + Math.random() * (h + 0.5), z - 0.15 - Math.random() * 0.1);
+      q.setFromEuler(new THREE.Euler((Math.random() - 0.5) * 0.6, Math.PI + (Math.random() - 0.5) * 0.6, Math.random() * 6));
+      leaves.setMatrixAt(i, m4.compose(p, q, s));
     }
     this.group.add(leaves);
   }
-
-  buildJungle() {
-    const Q = this.quality;
-    const nTrees = Q === 'high' ? 160 : 70;
-    const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 1, 7);
-    trunkGeo.translate(0, 0.5, 0);
-    const crownGeo = new THREE.IcosahedronGeometry(1, 1);
-    const trunks = new THREE.InstancedMesh(trunkGeo, this.mats.trunk, nTrees);
-    const crowns = new THREE.InstancedMesh(crownGeo, this.mats.leaves, nTrees * 3);
-    const crowns2 = new THREE.InstancedMesh(crownGeo, this.mats.leavesDark, nTrees * 2);
-    trunks.castShadow = crowns.castShadow = crowns2.castShadow = true;
-    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
-    let ci = 0, ci2 = 0;
-    for (let i = 0; i < nTrees; i++) {
-      const side = i % 2 ? 1 : -1;
-      const z = -15 + Math.random() * 190;
-      const x = side * (12 + Math.random() * 40);
-      const h = 6 + Math.random() * 9;
-      const gy = this.groundYOutside(z);
-      p.set(x, gy, z); s.set(1, h, 1); q.setFromEuler(new THREE.Euler(0, Math.random() * 6, (Math.random() - 0.5) * 0.15));
-      trunks.setMatrixAt(i, m4.compose(p, q, s));
-      for (let k = 0; k < 3; k++) {
-        const r = 1.8 + Math.random() * 1.6;
-        p.set(x + (Math.random() - 0.5) * 2.5, gy + h + (Math.random() - 0.3) * 1.5, z + (Math.random() - 0.5) * 2.5);
-        s.set(r, r * 0.7, r);
-        crowns.setMatrixAt(ci++, m4.compose(p, q, s));
-      }
-      for (let k = 0; k < 2; k++) {
-        const r = 1.4 + Math.random();
-        p.set(x + (Math.random() - 0.5) * 3, gy + h * 0.75, z + (Math.random() - 0.5) * 3);
-        s.set(r, r * 0.6, r);
-        crowns2.setMatrixAt(ci2++, m4.compose(p, q, s));
-      }
-    }
-    this.group.add(trunks, crowns, crowns2);
-
-    // ilhas de selva dos dois lados
-    for (const side of [-1, 1]) {
-      const isle = new THREE.Mesh(boxGeo(46, 2, 200, 0.25), this.mats.ground);
-      isle.position.set(side * 34, -1.0, 80); isle.receiveShadow = true;
-      this.group.add(isle);
-    }
-    // fetos
-    const nF = Q === 'high' ? 500 : 180;
-    const fernGeo = new THREE.PlaneGeometry(1.4, 1.4); fernGeo.translate(0, 0.7, 0);
-    const ferns = new THREE.InstancedMesh(fernGeo, this.mats.fern, nF);
-    for (let i = 0; i < nF; i++) {
-      const side = i % 2 ? 1 : -1;
-      const z = -10 + Math.random() * 180, x = side * (11.5 + Math.random() * 25);
-      p.set(x, this.groundYOutside(z), z);
-      q.setFromEuler(new THREE.Euler(-0.3 + Math.random() * 0.6, Math.random() * 6, 0));
-      const sc = 0.7 + Math.random() * 0.9; s.set(sc, sc, sc);
-      ferns.setMatrixAt(i, m4.compose(p, q, s));
-    }
-    this.group.add(ferns);
-  }
-  groundYOutside() { return 0; }
 
   makeBoulder() {
     const geo = new THREE.IcosahedronGeometry(2.3, 2);
@@ -422,7 +461,8 @@ export class Level1 {
   update(dt, game) {
     this.time += dt;
     const t = this.time;
-    this.water.material.normalMap.offset.set(t * 0.01, t * 0.02);
+    this.water.material.userData.time.value = t;
+    this.scenery.update(t);
 
     for (const tc of this.torches) {
       const f = 0.85 + Math.sin(t * 13 + tc.seed) * 0.08 + Math.sin(t * 29 + tc.seed * 2) * 0.07;
