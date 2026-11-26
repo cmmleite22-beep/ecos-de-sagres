@@ -136,8 +136,8 @@ func add_tag(text: String, color: Color) -> void:
 	tag.modulate = color
 	tag.outline_modulate = Color(0, 0, 0, 0.7)
 	tag.outline_size = 10
-	tag.font_size = 48
-	tag.pixel_size = 0.006
+	tag.font_size = 40
+	tag.pixel_size = 0.005
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	tag.no_depth_test = true
 	tag.position.y = 2.2

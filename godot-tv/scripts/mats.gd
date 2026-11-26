@@ -43,7 +43,7 @@ void fragment() {
 	tz = vec3(tz.xy + wnrm.xy, abs(tz.z) * wnrm.z);
 	vec3 wn = normalize(tx.zyx * bl.x + ty.xzy * bl.y + tz.xyz * bl.z);
 	float n = texture(moss_noise, wpos.xz * 0.11 + wpos.y * 0.05).r;
-	float mo = moss * smoothstep(0.25, 0.75, wn.y + (n - 0.5) * 1.1);
+	float mo = moss * smoothstep(0.55, 0.85, wn.y * 0.7 + n * 0.6 - 0.15);
 	// musgo também nas fendas da base das paredes
 	mo = max(mo, moss * 0.8 * smoothstep(0.62, 0.9, n) * (1.0 - smoothstep(0.0, 2.5, fract(wpos.y / 6.0) * 6.0)));
 	vec3 col = a * tint;
@@ -161,7 +161,7 @@ func _init() -> void:
 	var mossn := _noise_tex(0.035, 4, false, 256)
 
 	m.stone = _tri(stone, Color(0.86, 0.82, 0.76) if not stone.photo else Color(1, 0.97, 0.92), 0.33, 0.25, mossn)
-	m.mossStone = _tri(stone, Color(0.72, 0.74, 0.66) if not stone.photo else Color(0.86, 0.88, 0.8), 0.33, 0.75, mossn)
+	m.mossStone = _tri(stone, Color(0.72, 0.74, 0.66) if not stone.photo else Color(0.86, 0.88, 0.8), 0.33, 0.6, mossn)
 	m.carved = _tri(carved, Color(1, 0.95, 0.85), 0.45, 0.15, mossn)
 	m.rock = _tri(rock, Color(0.8, 0.78, 0.74) if not rock.photo else Color(0.95, 0.93, 0.9), 0.12, 0.4, mossn)
 	m.sand = _tri(sandt, Color(0.9, 0.88, 0.84), 0.25, 0.0, mossn)

@@ -365,8 +365,8 @@ func _on_msg(id: String, m: Dictionary) -> void:
 
 func _build_view_model(color: Color) -> Node3D:
 	var g := Node3D.new()
-	var metal := CharModel._mat(Color(0.14, 0.145, 0.16), 0.32); metal.metallic = 0.9
-	var worn := CharModel._mat(Color(0.29, 0.3, 0.32), 0.25); worn.metallic = 0.95
+	var metal := CharModel._mat(Color(0.32, 0.33, 0.35), 0.38); metal.metallic = 0.75
+	var worn := CharModel._mat(Color(0.55, 0.56, 0.58), 0.3); worn.metallic = 0.85
 	var grip := CharModel._mat(Color(0.23, 0.16, 0.11), 0.75)
 	var sleeve := CharModel._mat(color, 0.85)
 	var glove := CharModel._mat(Color(0.35, 0.25, 0.19), 0.7)
@@ -778,8 +778,9 @@ func update_overview(dt: float) -> void:
 	over_target = over_target.lerp(target, 1.0 - exp(-dt * 2.0))
 	var want := over_target + Vector3(sin(_t * 0.05) * 10, 12, -14)
 	over_cam.position = over_cam.position.lerp(want, 1.0 - exp(-dt * 2.0))
-	if over_cam.position.distance_to(over_target) > 0.1:
-		over_cam.look_at(over_target + Vector3(0, 1, 4))
+	var look := over_target + Vector3(0, 1, 4)
+	if over_cam.position.distance_to(look) > 0.1:
+		over_cam.transform = over_cam.transform.looking_at(look, Vector3.UP)
 
 # ------------------------------------------------------------------ ciclo
 func _physics_process(dt: float) -> void:
