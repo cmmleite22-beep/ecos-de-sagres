@@ -2,6 +2,7 @@
 import { Game } from './game/game.js';
 import { Hud } from './game/hud.js';
 import { Net } from './game/net.js';
+import { STATIC_MODE } from '../shared/config.js';
 
 const params = new URLSearchParams(location.search);
 // Qualidade: 'cast' no Chromecast (720p, sem bloom), 'high' em PC/Google TV potente. Forçar com ?q=
@@ -11,7 +12,7 @@ const hud = new Hud();
 const net = new Net();
 const game = new Game(document.getElementById('c'), hud, net, quality);
 hud.setPlayers([]);
-hud.setCastMode(!!window.IS_CAST);
+hud.setCastMode(!!window.IS_CAST, STATIC_MODE);
 net.start();
 game.enableKeyboard();
 game.loop();

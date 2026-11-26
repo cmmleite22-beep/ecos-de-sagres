@@ -39,8 +39,21 @@ export class Hud {
     $('#ws-status').textContent = code ? '' : 'A ligar ao servidor…';
   }
 
-  setCastMode(on) {
-    $('#cast-hint').style.display = on ? 'block' : 'none';
+  setCastMode(on, staticMode) {
+    $('#cast-hint').style.display = on || staticMode ? 'block' : 'none';
+    if (staticMode) {
+      // sem servidor: não há QR nem código; entra-se pelo botão Chromecast no telemóvel
+      document.querySelector('.join').classList.add('static');
+      const url = this.controllerUrl(null);
+      $('#join-url').textContent = url.replace(/^https?:\/\//, '');
+      $('#ws-status').textContent = '';
+      $('#room-code').textContent = '';
+      $('#cast-hint').textContent = 'Abre este endereço no Chrome do telemóvel e toca em "Ligar ao Chromecast".';
+      if (window.qrcode) {
+        const qr = window.qrcode(0, 'M'); qr.addData(url); qr.make();
+        $('#qr').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 2, scalable: true });
+      }
+    }
   }
 
   setPlayers(list) {

@@ -1,6 +1,6 @@
 // Comando no telemóvel: joystick virtual + botões, envia input para a TV.
 // Dois transportes: WebSocket (servidor de salas) ou canal Cast (Chromecast).
-import { CONFIG, wsUrl } from '../shared/config.js';
+import { CONFIG, wsUrl, STATIC_MODE } from '../shared/config.js';
 import { BTN, CHARACTERS } from '../shared/protocol.js';
 
 const $ = (s) => document.querySelector(s);
@@ -103,6 +103,11 @@ function renderChars(sel, live) {
   }
 }
 
+if (STATIC_MODE) {
+  // alojamento sem servidor: só o Chromecast
+  document.querySelector('#s-join .row').classList.add('hidden');
+  if (CONFIG.CAST_APP_ID === 'CHANGE_ME') $('#join-err').textContent = 'Falta configurar o ID da aplicação Cast (CAST_APP_ID).';
+}
 $('#name').value = store.get('ecos.name', '');
 $('#code').value = (params.get('room') || '').toUpperCase();
 renderChars('#chars', false);

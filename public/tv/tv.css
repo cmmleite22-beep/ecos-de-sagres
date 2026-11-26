@@ -43,6 +43,7 @@ h2 { font-size: 1.5vw; font-weight: normal; opacity: .85; margin-bottom: 2.5vh; 
 #win h1 { font-size: 5vw; } #win h2 { font-size: 1.8vw; }
 #win-stats p { font-size: 1.5vw; text-align: center; margin: .6vh; } #win-stats .next { margin-top: 3vh; color: #ffcf73; }
 @keyframes fade { from { opacity: 0; } }
+.join.static #room-code { display: none; }
 #fps { position: fixed; bottom: 1vh; right: 1vw; font-size: .8vw; opacity: .35; }
 
 /* ---------- vistas de cada jogador ---------- */

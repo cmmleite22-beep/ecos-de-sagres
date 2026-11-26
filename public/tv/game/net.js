@@ -1,7 +1,7 @@
 // Rede do lado da TV. Junta dois transportes que entregam as mesmas mensagens ao jogo:
 //  1) WebSocket para o servidor de salas (telemóveis entram por QR/código)
 //  2) Canal Cast personalizado (telemóveis ligados ao Chromecast pela app/Chrome)
-import { CONFIG, wsUrl } from '../../shared/config.js';
+import { CONFIG, wsUrl, STATIC_MODE } from '../../shared/config.js';
 
 export class Net {
   constructor() {
@@ -15,7 +15,7 @@ export class Net {
   emit(evt, ...a) { (this.handlers[evt] || []).forEach((f) => f(...a)); }
 
   start() {
-    this.connectWS();
+    if (!STATIC_MODE) this.connectWS();
     this.startCast();
   }
 
