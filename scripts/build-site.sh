@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Monta o site estático em _site/ (GitHub Pages e Cloudflare Pages usam o mesmo).
+# Monta o site estático em _site/ (GitHub Pages, Firebase Hosting e Cloudflare Pages usam o mesmo).
 # Uso: npm ci && npm run build:site
 set -e
 rm -rf _site

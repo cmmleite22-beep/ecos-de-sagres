@@ -19,22 +19,27 @@ a app mostra uma barra fina com o endereço no topo (ver «Alojamento» abaixo);
 Os ficheiros ficam também na release `risca-android` do repositório:
 `risca-e-arrisca.apk` (instalar no telemóvel), `risca-e-arrisca.aab` (para a Play Store) e `LEIA-ME-chave.txt`.
 
-## Alojamento grátis com domínio próprio (Cloudflare Pages)
+## Alojamento grátis com domínio próprio (Firebase Hosting)
 
 Para a barra do endereço desaparecer, o Android tem de encontrar `/.well-known/assetlinks.json` na **raiz** do
-domínio. No GitHub Pages o site está numa subpasta (`/ecos-de-sagres/`), por isso não dá. O Cloudflare Pages é grátis,
-tem HTTPS e põe o site na raiz:
+domínio. No GitHub Pages o site está numa subpasta (`/ecos-de-sagres/`), por isso não dá. O Firebase Hosting é grátis
+(plano Spark), tem HTTPS e põe o site na raiz: `https://<projeto>.web.app`.
+O workflow **Publicar no Firebase Hosting** publica o site sempre que o `main` muda, mal esteja configurado:
 
-1. Criar conta grátis em https://dash.cloudflare.com/sign-up
-2. *Workers & Pages → Create → Pages → Connect to Git* e escolher `cmmleite22-beep/ecos-de-sagres`.
-3. Definições: *Production branch* `main`, *Build command* `npm ci && npm run build:site`, *Build output directory* `_site`.
-4. O site fica em `https://<nome>.pages.dev` (o jogo em `/risca/tv/` e `/risca/comando/`).
+1. Em https://console.firebase.google.com criar (ou escolher) um projeto. Anotar o **ID do projeto**
+   (*Definições do projeto → Geral*, por exemplo `risca-e-arrisca`).
+2. No menu *Hosting*, carregar em *Começar* e avançar até ao fim (não é preciso instalar nada).
+3. *Definições do projeto → Contas de serviço → Gerar nova chave privada*: descarrega um ficheiro `.json`.
+4. No GitHub, *Settings → Secrets and variables → Actions*:
+   - separador *Secrets*, *New repository secret*: nome `FIREBASE_SERVICE_ACCOUNT`, valor = todo o conteúdo do ficheiro `.json`;
+   - separador *Variables*, *New repository variable*: nome `FIREBASE_PROJECT_ID`, valor = o ID do projeto.
+   Depois apagar o ficheiro `.json` do computador (é uma chave de acesso).
 5. Depois disso (o Claude pode fazer estes passos):
-   - na consola Google Cast, mudar o endereço do receiver para `https://<nome>.pages.dev/risca/tv/`;
-   - no GitHub, *Settings → Secrets and variables → Actions → Variables*, criar `RISCA_SITE_URL` = `https://<nome>.pages.dev`;
-   - copiar a linha `assetlinks.json` do `LEIA-ME-chave.txt` para `public/.well-known/assetlinks.json` e voltar a compilar a app.
+   - na consola Google Cast, mudar o receiver para `https://<projeto>.web.app/risca/tv/?cast=1` e o sender para `https://<projeto>.web.app/risca/comando/`;
+   - criar a variável `RISCA_SITE_URL` = `https://<projeto>.web.app`;
+   - pôr o `assetlinks.json` em `public/.well-known/` e voltar a compilar a app.
 
-Outras opções grátis: Firebase Hosting e Netlify (também põem o site na raiz).
+Outras opções grátis: Cloudflare Pages (build `npm ci && npm run build:site`, pasta `_site`) e Netlify.
 
 ## Chave de assinatura (obrigatória para a Play Store)
 
@@ -54,8 +59,8 @@ Guardar `risca.keystore` e a palavra-passe num sítio seguro (sem elas não há 
 
 ## Publicar na Play Store
 
-1. **Conta de programador** Google Play: https://play.google.com/console (pagamento único de 25 USD, verificação de identidade).
-2. Contas pessoais novas têm de fazer um **teste fechado com pelo menos 12 testadores durante 14 dias** antes de publicar.
+1. **Conta de programador** Google Play: https://play.google.com/console (já existe).
+2. Contas pessoais criadas depois de novembro de 2023 têm de fazer um **teste fechado com pelo menos 12 testadores durante 14 dias** antes de publicar.
 3. *Criar app* → nome «Risca e Arrisca», jogo, grátis ou pago.
 4. Carregar `risca-e-arrisca.aab` (release `risca-android`). Ativar a **Play App Signing**.
 5. Em *Integridade da app → Assinatura*, copiar a impressão SHA-256 da **chave de assinatura da app** da Google e
