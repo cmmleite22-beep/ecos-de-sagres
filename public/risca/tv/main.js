@@ -3,10 +3,12 @@ import { Jogo } from './jogo.js';
 import { Net } from './net.js';
 import { Som } from './som.js';
 import { STATIC_MODE } from '../config.js';
+import { traduzirPagina } from '../i18n.js';
 
 const start = () => {
   const net = new Net();
   const jogo = new Jogo(net, new Som());
+  traduzirPagina(jogo.settings.lang);
   jogo.hud.setCastMode(STATIC_MODE);
   jogo.lobbyChanged();
   net.start();

@@ -53,13 +53,26 @@ Quem já acertou pode mandar **reações** (👏 😂 🤯 🔥 …) que sobem n
 - Quem desenha: 25 por cada pessoa que acerta (+20 se todos acertarem), vezes o multiplicador.
 - Quem sai a meio e volta a entrar com o mesmo nome recupera os pontos.
 
-### Temas
-Tudo misturado, Animais, Comida, Casa e objetos, Natureza e lugares, Ações e profissões, Desporto e lazer,
-Portugal e Açores (cerca de 420 palavras em português de Portugal, em `public/risca/palavras.js`),
-**Inglês (English)** com 60 palavras para aulas de língua (não entra no "Tudo misturado")
-e **As nossas palavras**: o chefe da sala escreve a sua lista no telemóvel (separada por vírgulas),
-útil para rever vocabulário numa aula. As listas podem ser **guardadas com um nome** nesse telemóvel
-e escolhidas noutro dia.
+### Línguas
+O jogo fala **português de Portugal, português do Brasil, inglês, espanhol, francês, alemão e chinês** (simplificado).
+- Cada telemóvel mostra os textos na sua língua (escolhe-se no primeiro ecrã; por defeito, a do telemóvel).
+- A **língua do jogo** (palavras e TV) escolhe-a o chefe da sala; começa na língua do telemóvel dele.
+- Os palpites ignoram maiúsculas, acentos e artigos em todas as línguas («die Katze» = «Katze», «Kaese» = «Käse»);
+  em chinês escreve-se com caracteres.
+- Textos em `public/risca/i18n.js`; palavras em `public/risca/palavras/<língua>.js`. Para acrescentar uma língua,
+  basta juntar um bloco de textos e um ficheiro de palavras (o que faltar aparece em português).
+
+### Temas, categorias e conjuntos de palavras
+Tudo misturado, Animais, Comida, Casa e objetos, Natureza e lugares, Ações e profissões, Desporto e lazer
+(60 palavras por tema em cada língua, em três níveis), mais **Portugal e Açores** em português de Portugal
+e **Brasil** em português do Brasil.
+
+No telemóvel do chefe, **✏️ Categorias e palavras**:
+- criar **categorias próprias** (ex.: «Ciências») e juntar-lhes **conjuntos de palavras** (ex.: «5.º ano», «Corpo humano»);
+  ao escolher a categoria, joga-se com todas as palavras dos seus conjuntos;
+- juntar conjuntos também a um **tema do jogo** (ex.: animais dos Açores em «Animais»): entram com as palavras que o tema já tem;
+- cada conjunto fica ligado à língua em que foi criado e só entra nos jogos nessa língua;
+- fica tudo guardado nesse telemóvel. As listas guardadas antes passam para a categoria «As minhas listas».
 
 ## Técnica
 - 2D leve: o desenho é feito numa tela de 800×600 com as mesmas operações na TV e no telemóvel

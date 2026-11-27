@@ -12,15 +12,25 @@ const errs = [];
 const ok = (cond, msg) => { console.log((cond ? 'OK      ' : 'FALHOU  ') + msg); if (!cond) process.exitCode = 1; };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// cria uma categoria com um conjunto de palavras no telemóvel do chefe
+async function makeCat(ph, name, list) {
+  if (await ph.$eval('#cats', (e) => e.classList.contains('hidden'))) await ph.click('#cat-open');
+  await ph.fill('#cat-name', name);
+  await ph.click('#cat-add');
+  await ph.fill('#set-words', list);
+  await ph.click('#set-save');
+  await new Promise((r) => setTimeout(r, 300));
+}
+
 async function newTV() {
-  const tv = await b.newPage({ viewport: { width: 1280, height: 720 } });
+  const tv = await b.newPage({ viewport: { width: 1280, height: 720 }, locale: 'pt-PT' });
   tv.on('pageerror', (e) => errs.push('TV ' + e.message));
   await tv.goto(`${BASE}/risca/tv/`);
   await tv.waitForFunction(() => /^[A-Z]{4}$/.test(document.getElementById('room-code').textContent), null, { timeout: 30000 });
   return { tv, code: await tv.$eval('#room-code', (e) => e.textContent) };
 }
 async function newPhone(code, name) {
-  const ctx = await b.newContext({ ...devices['Pixel 7'], acceptDownloads: true });
+  const ctx = await b.newContext({ ...devices['Pixel 7'], acceptDownloads: true, locale: 'pt-PT' });
   const ph = await ctx.newPage();
   ph.on('pageerror', (e) => errs.push('PH ' + e.message));
   await ph.goto(`${BASE}/risca/comando/?room=${code}`);
@@ -48,18 +58,29 @@ async function drawSomething(ph, k = 0) {
   const A = await newPhone(code, 'Ana'), B = await newPhone(code, 'Bruno'), C = await newPhone(code, 'Carla');
   const phones = [A, B, C];
 
-  // listas guardadas no telemóvel do chefe
-  await A.fill('#o-custom', 'célula, planta, raiz, folha, flor');
-  await A.fill('#o-listname', 'Ciências');
-  await A.click('#list-save');
+  // categorias e conjuntos de palavras guardados no telemóvel do chefe
+  await makeCat(A, 'Ciências', 'célula, planta, raiz, folha, flor');
   await A.reload();
   ok(await A.$eval('#s-lobby', (e) => !e.classList.contains('hidden')), 'recarregar a página a meio volta a entrar sozinho');
   ok(await T(tv, () => __risca.players.size === 3 && __risca.list[0].name === 'Ana'), 'quem recarrega fica com o mesmo lugar (sem duplicar)');
-  await A.waitForSelector('#o-lists option:nth-child(2)', { state: 'attached' });
-  ok((await A.$$eval('#o-lists option', (o) => o.map((x) => x.textContent))).some((t) => t.startsWith('Ciências (5)')), 'a lista guardada continua no telemóvel depois de recarregar');
-  await A.selectOption('#o-lists', '0');
+  await A.waitForFunction(() => [...document.querySelectorAll('#o-theme option')].some((o) => o.textContent.startsWith('★ Ciências (5)')));
+  ok(true, 'a categoria guardada continua no telemóvel depois de recarregar');
+  const catVal = await A.$$eval('#o-theme option', (o) => o.find((x) => x.textContent.startsWith('★ Ciências')).value);
+  await A.selectOption('#o-theme', catVal);
   await wait(300);
-  ok(await T(tv, () => __risca.settings.theme === 'nossas' && __risca.settings.custom.length === 5), 'escolher uma lista guardada usa essas palavras');
+  ok(await T(tv, () => __risca.settings.theme === 'propria' && __risca.settings.custom.length === 5 && __risca.settings.themeName === 'Ciências'), 'escolher uma categoria guardada usa essas palavras');
+  // juntar um conjunto a um tema do jogo
+  await A.selectOption('#o-theme', 'animais');
+  if (await A.$eval('#cats', (e) => e.classList.contains('hidden'))) await A.click('#cat-open');
+  await A.click('#set-new');
+  await A.fill('#set-name', 'Açores');
+  await A.fill('#set-words', 'priolo, cagarro, milhafre');
+  await A.click('#set-save');
+  await wait(300);
+  ok(await T(tv, () => __risca.settings.theme === 'animais' && __risca.settings.custom.join() === 'priolo,cagarro,milhafre'), 'um conjunto junta-se a um tema que já existe');
+  ok(/\+ 3/.test(await B.$eval('#theme-info', (e) => e.textContent)), 'os outros telemóveis veem que há palavras a mais');
+  await A.selectOption('#o-theme', catVal);
+  await wait(300);
 
   // equipas + modo pequenos
   await A.selectOption('#o-mode', 'equipas');
@@ -153,9 +174,13 @@ async function drawSomething(ph, k = 0) {
 
   // ============ 2. Passa o Risco ============
   await A.selectOption('#o-mode', 'passa');
-  await A.selectOption('#o-theme', 'ingles');
+  await A.selectOption('#o-lang', 'en');
+  await wait(200);
+  await A.selectOption('#o-theme', 'animais');
   await wait(300);
-  ok(await T(tv, () => __risca.settings.mode === 'passa' && __risca.settings.theme === 'ingles'), 'escolher Passa o Risco e o tema em inglês');
+  ok(await T(tv, () => __risca.settings.mode === 'passa' && __risca.settings.theme === 'animais' && __risca.settings.lang === 'en'), 'escolher Passa o Risco com palavras em inglês');
+  ok(await tv.$eval('#rules-passa li', (e) => /Everyone at once/.test(e.textContent)), 'a TV muda para inglês');
+  ok(await A.$eval('#btn-start', (e) => e.textContent === 'COMEÇAR'), 'o telemóvel continua na sua língua');
   await tv.screenshot({ path: `${OUT}/tv-lobby-passa.png` });
   await C.click('#btn-start');
   await wait(500);
