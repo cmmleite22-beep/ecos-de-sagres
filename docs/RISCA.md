@@ -56,12 +56,12 @@ e **As nossas palavras**: o chefe da sala escreve a sua lista no telemóvel (sep
 | `comando/` | comando do telemóvel (PWA) |
 
 ## Chromecast
-Falta registar a aplicação Cast deste jogo (enquanto `CAST_APP_ID` for `CHANGE_ME`, o botão Chromecast fica escondido
-e joga-se pelo código da sala com `npm start`):
+Aplicação Cast registada e publicada: **6179B961** (em `public/risca/config.js`). Como foi registada:
 1. <https://cast.google.com/publish> → **Add new application → Custom Receiver**, nome "Risca e Arrisca",
    URL `https://cmmleite22-beep.github.io/ecos-de-sagres/risca/tv/?cast=1`.
-2. Publicar a aplicação (como nos outros jogos, para não ser preciso registar o número de série da TV).
-3. Copiar o *Application ID* para `public/risca/config.js` → `CAST_APP_ID`.
+2. Em **Sender Details → Chrome**, endereço do comando `https://cmmleite22-beep.github.io/ecos-de-sagres/risca/comando/`
+   (Listing em NO) e **Save**: sem isto a consola não deixa publicar.
+3. **Publish** (para não ser preciso registar o número de série da TV).
 
 ## Teste
 ```bash
