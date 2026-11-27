@@ -34,13 +34,20 @@
 <section id="s-lobby" class="screen hidden">
   <h2>Sala de espera</h2>
   <ul id="lp"></ul>
+  <div id="team-pick" class="hidden"><p class="hint">Escolhe a tua equipa:</p><div id="team-btns"></div></div>
   <div id="opts">
     <p class="hint" id="opts-who"></p>
-    <label>Voltas <select id="o-rounds"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+    <label>Modo de jogo <select id="o-mode"><option value="classico">✏️ Clássico</option><option value="equipas">👥 Equipas</option><option value="passa">🔄 Passa o Risco</option></select></label>
+    <p class="hint mode-help" id="mode-help"></p>
+    <label id="teams-l" class="hidden">Número de equipas <select id="o-teams"><option>2</option><option>3</option><option>4</option></select></label>
+    <label id="rounds-l">Voltas <select id="o-rounds"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
     <label>Tempo para desenhar <select id="o-time"><option value="45">45 s</option><option value="60">60 s</option><option value="80" selected>80 s</option><option value="100">100 s</option><option value="120">120 s</option></select></label>
     <label>Tema <select id="o-theme"></select></label>
+    <label class="check" id="kids-l"><input type="checkbox" id="o-kids"> 🧒 Modo pequenos: escolher a resposta entre 4, sem escrever</label>
     <label id="custom-l">As nossas palavras <small>(separadas por vírgulas; pelo menos 3)</small>
-      <textarea id="o-custom" rows="3" placeholder="ex.: Ponta Delgada, professora, recreio, lancheira"></textarea></label>
+      <select id="o-lists"><option value="">— listas guardadas neste telemóvel —</option></select>
+      <textarea id="o-custom" rows="3" placeholder="ex.: Ponta Delgada, professora, recreio, lancheira"></textarea>
+      <span class="list-row"><input id="o-listname" maxlength="30" placeholder="Nome da lista (ex.: Ciências 5.º ano)"><button id="list-save" type="button" class="mini">Guardar</button><button id="list-del" type="button" class="mini">Apagar</button></span></label>
   </div>
   <button id="btn-start" class="primary big">COMEÇAR</button>
   <p id="lobby-hint" class="hint"></p>
@@ -52,6 +59,8 @@
   <div class="big-emoji" id="msg-emoji">✏️</div>
   <h2 id="msg-title"></h2>
   <p id="msg-text"></p>
+  <button id="msg-save" class="cast hidden">💾 Guardar o meu desenho</button>
+  <button id="msg-next" class="primary big hidden">Seguinte ▶</button>
 </section>
 
 <!-- escolher palavra -->
@@ -80,6 +89,7 @@
         <button class="tool" id="t-clear" title="Limpar">🗑️<span>Limpar</span></button>
       </div>
       <button id="t-giveup" class="link">Desistir deste desenho</button>
+      <button id="t-done" class="primary hidden">Pronto ✓</button>
     </div>
   </div>
 </section>
@@ -89,6 +99,7 @@
   <div class="bar"><span class="me"></span><span class="pts"></span><span class="clock"></span></div>
   <p class="who" id="g-who"></p>
   <div id="g-pattern"></div>
+  <div id="g-options" class="hidden"></div>
   <form id="g-form" autocomplete="off">
     <input id="g-input" maxlength="30" placeholder="Escreve o teu palpite" enterkeyhint="send" autocapitalize="off" autocorrect="off" spellcheck="false">
     <button class="primary" type="submit">➤</button>
@@ -99,12 +110,34 @@
   <div id="reacts"></div>
 </section>
 
+<!-- Passa o Risco: adivinhar o desenho recebido -->
+<section id="s-pguess" class="screen hidden">
+  <div class="bar"><span class="me"></span><span id="pg-step"></span><span class="clock"></span></div>
+  <h2>O que é este desenho?</h2>
+  <img id="pg-img" alt="desenho para adivinhar">
+  <form id="pg-form" autocomplete="off">
+    <input id="pg-input" maxlength="30" placeholder="Escreve o que achas que é" enterkeyhint="send" autocapitalize="off" spellcheck="false">
+    <button class="primary" type="submit">➤</button>
+  </form>
+  <p id="pg-done" class="fb yes hidden">Enviado! Espera pelos outros…</p>
+</section>
+
+<!-- Lápis de Ouro -->
+<section id="s-vote" class="screen hidden">
+  <div class="big-emoji">🏅</div>
+  <h2>Lápis de Ouro</h2>
+  <p class="hint">Vota no melhor desenho (os números estão na TV). Podes mudar o voto.</p>
+  <div id="v-list"></div>
+</section>
+
 <!-- fim -->
 <section id="s-final" class="screen hidden">
   <div class="big-emoji" id="f-emoji">🏆</div>
   <h2 id="f-title"></h2>
   <ol id="f-top"></ol>
   <button id="btn-again" class="primary big">JOGAR DE NOVO</button>
+  <h3 id="f-gal-t">Guardar desenhos no telemóvel</h3>
+  <div id="f-gal"></div>
 </section>
 
 <div id="overlay" class="hidden"></div>

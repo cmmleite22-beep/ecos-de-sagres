@@ -59,7 +59,17 @@ export const TEMAS = {
       L('torre de belém, ponte 25 de abril, sete cidades, cozido das furnas, tourada à corda, coroa do espírito santo, bote baleeiro, vigia da baleia, padrão dos descobrimentos, império, alcatra, caldeira, gruta do natal, santo antónio, marchas populares, bacalhau, francesinha, manjerico, sardinha assada, tremoços'),
     ],
   },
+  ingles: {
+    nome: 'Inglês (English)',
+    fora: true, // não entra no "Tudo misturado"
+    n: [
+      L('cat, dog, fish, bird, sun, moon, tree, house, car, ball, apple, banana, book, chair, table, hat, shoe, cake, star, flower'),
+      L('rabbit, horse, elephant, bicycle, umbrella, rainbow, pencil, window, kitchen, teacher, sandwich, butterfly, mountain, island, bridge, castle, rocket, guitar, snowman, spider'),
+      L('lighthouse, volcano, astronaut, skateboard, toothbrush, wheelchair, fireworks, waterfall, scarecrow, backpack, headphones, sunglasses, dinosaur, octopus, penguin, jellyfish, treasure, campfire, library, ladder'),
+    ],
+  },
 };
+const MISTO = Object.values(TEMAS).filter((t) => !t.fora);
 
 export const TEMA_LISTA = [['misto', 'Tudo misturado'], ...Object.entries(TEMAS).map(([k, t]) => [k, t.nome]), ['nossas', 'As nossas palavras']];
 export const NIVEL = [null, { nome: 'fácil', mult: 1 }, { nome: 'média', mult: 1.3 }, { nome: 'difícil', mult: 1.6 }];
@@ -85,7 +95,7 @@ export function escolher(theme, custom, used, rnd = Math.random) {
     while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
     return out.map((w) => ({ w, lvl: 2 }));
   }
-  const temas = TEMAS[theme] ? [TEMAS[theme]] : Object.values(TEMAS);
+  const temas = TEMAS[theme] ? [TEMAS[theme]] : MISTO;
   const out = [];
   for (let lvl = 1; lvl <= 3; lvl++) {
     let w, tries = 0;
@@ -95,6 +105,36 @@ export function escolher(theme, custom, used, rnd = Math.random) {
     } while (out.some((o) => norm(o.w) === norm(w)) && ++tries < 20);
     out.push({ w, lvl });
   }
+  return out;
+}
+
+// Várias palavras diferentes de uma vez (fáceis e médias), para o "Passa o Risco".
+export function escolherVarias(theme, custom, n, used, rnd = Math.random) {
+  const pool = theme === 'nossas' && custom?.length >= 3 ? custom.slice()
+    : (TEMAS[theme] ? [TEMAS[theme]] : MISTO).flatMap((t) => [...t.n[0], ...t.n[1]]);
+  let free = pool.filter((w) => !used.has(norm(w)));
+  if (free.length < n) free = pool.slice();
+  const out = [];
+  while (out.length < n) {
+    if (!free.length) free = pool.slice();
+    out.push(free.splice(Math.floor(rnd() * free.length), 1)[0]);
+  }
+  return out;
+}
+
+// Opções para o modo dos mais novos: a palavra certa e mais 3 do mesmo tema, baralhadas.
+export function opcoes(theme, custom, word, rnd = Math.random) {
+  const all = (ts) => ts.flatMap((t) => t.n.flat());
+  let pool = theme === 'nossas' && custom?.length ? custom.slice() : TEMAS[theme] ? all([TEMAS[theme]]) : all(MISTO);
+  pool = pool.filter((w) => norm(w) !== norm(word));
+  const extra = (TEMAS[theme]?.fora ? all([TEMAS[theme]]) : all(MISTO)).filter((w) => norm(w) !== norm(word));
+  const out = [];
+  for (let k = 0; out.length < 3 && k < 60; k++) {
+    const src = pool.length ? pool : extra;
+    const w = src.splice(Math.floor(rnd() * src.length), 1)[0];
+    if (w && !out.some((o) => norm(o) === norm(w))) out.push(w);
+  }
+  out.splice(Math.floor(rnd() * 4), 0, word);
   return out;
 }
 

@@ -151,7 +151,9 @@ await wait(300);
 const dIdx = await tv.evaluate(() => __risca.order.indexOf(__risca.turn.drawer));
 await phones[dIdx].close();
 await wait(800);
-ok(await tv.evaluate(() => __risca.phase === 'reveal' && __risca.players.size === 2), 'quem desenha sai: a vez acaba e mostra a palavra');
+await tv.evaluate(() => { const p = __risca.players.get(__risca.turn.drawer); p.leftAt -= 20000; });
+await wait(500);
+ok(await tv.evaluate(() => __risca.phase === 'reveal' && __risca.online.length === 2), 'quem desenha sai: a vez acaba e mostra a palavra');
 
 ok(!errs.length, 'sem erros de JavaScript' + (errs.length ? ': ' + errs.join(' | ') : ''));
 await b.close();

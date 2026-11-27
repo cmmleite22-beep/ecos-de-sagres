@@ -101,7 +101,7 @@ wss.on('connection', (ws) => {
       ws.role = 'ctrl'; ws.room = code; ws.id = 'p' + (nextId++);
       room.controllers.set(ws.id, ws);
       send(ws, { t: 'joined', id: ws.id, code });
-      send(room.host, { t: 'join', id: ws.id, name: String(msg.name || 'Jogador').slice(0, 14), char: msg.char });
+      send(room.host, { t: 'join', id: ws.id, name: String(msg.name || 'Jogador').slice(0, 14), char: msg.char, key: msg.key ? String(msg.key).slice(0, 40) : undefined });
       return;
     }
     const room = rooms.get(ws.room);

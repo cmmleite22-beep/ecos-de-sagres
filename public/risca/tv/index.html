@@ -54,10 +54,15 @@
         <p id="ws-status">A ligar ao servidor…</p>
         <p class="cast-only">Abre a página no Chrome e toca em <b>Ligar ao Chromecast</b>.</p>
       </div>
-      <ol class="rules">
+      <ol class="rules" id="rules-classic">
         <li><b>À vez</b>, cada um recebe três palavras secretas e escolhe uma para desenhar no telemóvel.</li>
         <li>Os outros <b>escrevem palpites</b> no telemóvel. Quanto mais depressa acertarem, mais pontos.</li>
         <li>Quem desenha ganha pontos por cada pessoa que acerta. Nada de escrever letras no desenho!</li>
+      </ol>
+      <ol class="rules" id="rules-passa" hidden>
+        <li><b>Todos ao mesmo tempo</b>: cada um desenha a sua palavra secreta no telemóvel.</li>
+        <li>O desenho <b>passa ao seguinte</b>, que escreve o que acha que é. Quem vem a seguir desenha o que leu… e assim por diante.</li>
+        <li>No fim, a TV mostra como cada palavra se foi transformando. Não há pontos, só gargalhadas!</li>
       </ol>
     </div>
     <ul id="lplayers"></ul>
@@ -79,16 +84,28 @@
     <div id="board-msg"></div>
     <div id="reacts"></div>
   </div>
+  <div id="pgrid"></div>
+  <div id="pshow-wrap"><div id="pshow"></div><p id="pshow-end"></p></div>
   <div id="side">
     <h3>Palpites</h3>
     <ul id="feed"></ul>
+    <div id="opts"></div>
   </div>
+</section>
+
+<!-- Lápis de Ouro -->
+<section id="vote">
+  <h1>🏅 Lápis de Ouro</h1>
+  <p class="sub">Votem no telemóvel no melhor desenho do jogo (não vale votar no seu). Quem ganhar leva +60 pontos.</p>
+  <div id="vgallery"></div>
+  <p id="vcount"></p>
 </section>
 
 <!-- fim -->
 <section id="final">
   <h1>Pódio</h1>
   <div id="podium"></div>
+  <p id="golden"></p>
   <h3 id="gallery-t">Os desenhos deste jogo</h3>
   <div id="gallery"></div>
   <p class="again">Toquem em <b>JOGAR DE NOVO</b> no telemóvel.</p>
