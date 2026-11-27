@@ -45,8 +45,12 @@ jobs:
               echo "::error::O segredo RISCA_KEYSTORE_B64 não é texto base64 válido. Volte a copiar só o bloco de letras do comando base64 (ver docs/ANDROID-RISCA.md)."
               exit 1
             fi
-            if ! keytool -list -keystore /tmp/risca.keystore -storepass "${KEYSTORE_PASS:-android}" -alias risca > /dev/null 2>&1; then
-              echo "::error::A chave abriu mas a palavra-passe RISCA_KEYSTORE_PASS não serve (ou o nome da chave não é risca)."
+            echo "Ficheiro da chave: $(stat -c %s /tmp/risca.keystore) bytes, sha256 $(sha256sum /tmp/risca.keystore | cut -c1-16)…"
+            # Tira espaços e quebras de linha à volta da palavra-passe (é fácil copiá-los sem querer).
+            KEYSTORE_PASS=$(printf '%s' "$KEYSTORE_PASS" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
+            if ! OUT=$(keytool -list -keystore /tmp/risca.keystore -storepass "${KEYSTORE_PASS:-android}" -alias risca 2>&1); then
+              echo "keytool: $(printf '%s' "$OUT" | grep -v -i 'pass' | head -3)"
+              echo "::error::A chave não abre com a palavra-passe RISCA_KEYSTORE_PASS (ou o ficheiro colado não é o risca.keystore completo)."
               exit 1
             fi
             echo "Chave fixa lida com sucesso."
