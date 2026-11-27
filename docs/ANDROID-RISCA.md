@@ -24,19 +24,14 @@ Os ficheiros ficam também na release `risca-android` do repositório:
 Para a barra do endereço desaparecer, o Android tem de encontrar `/.well-known/assetlinks.json` na **raiz** do
 domínio. No GitHub Pages o site está numa subpasta (`/ecos-de-sagres/`), por isso não dá. O Firebase Hosting é grátis
 (plano Spark), tem HTTPS e põe o site na raiz: `https://<projeto>.web.app`.
-O workflow **Publicar no Firebase Hosting** publica o site sempre que o `main` muda, mal esteja configurado:
+Já está configurado: projeto Firebase `risca-e-arrisca`, site **https://risca-e-arrisca.web.app**.
+O workflow **Publicar no Firebase Hosting** publica o site sempre que o `main` muda. Não usa chave secreta:
+o GitHub identifica-se ao Google (*Workload Identity Federation*, pool `github`, provedor `github-actions`, só aceita
+este repositório) e usa a conta de serviço `github-deploy`, que só tem permissões de Hosting.
 
-1. Em https://console.firebase.google.com criar (ou escolher) um projeto. Anotar o **ID do projeto**
-   (*Definições do projeto → Geral*, por exemplo `risca-e-arrisca`).
-2. No menu *Hosting*, carregar em *Começar* e avançar até ao fim (não é preciso instalar nada).
-3. *Definições do projeto → Contas de serviço → Gerar nova chave privada*: descarrega um ficheiro `.json`.
-4. No GitHub, *Settings → Secrets and variables → Actions*:
-   - separador *Secrets*, *New repository secret*: nome `FIREBASE_SERVICE_ACCOUNT`, valor = todo o conteúdo do ficheiro `.json`;
-   - separador *Variables*, *New repository variable*: nome `FIREBASE_PROJECT_ID`, valor = o ID do projeto.
-   Depois apagar o ficheiro `.json` do computador (é uma chave de acesso).
-5. Depois disso (o Claude pode fazer estes passos):
-   - na consola Google Cast, mudar o receiver para `https://<projeto>.web.app/risca/tv/?cast=1` e o sender para `https://<projeto>.web.app/risca/comando/`;
-   - criar a variável `RISCA_SITE_URL` = `https://<projeto>.web.app`;
+Passos seguintes:
+   - na consola Google Cast, mudar o receiver para `https://risca-e-arrisca.web.app/risca/tv/?cast=1` e o sender para `https://risca-e-arrisca.web.app/risca/comando/`;
+   - criar a variável `RISCA_SITE_URL` = `https://risca-e-arrisca.web.app`;
    - pôr o `assetlinks.json` em `public/.well-known/` e voltar a compilar a app.
 
 Outras opções grátis: Cloudflare Pages (build `npm ci && npm run build:site`, pasta `_site`) e Netlify.

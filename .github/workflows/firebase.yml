@@ -1,6 +1,7 @@
-# Publica o site (jogos para a TV/Chromecast e comandos) no Firebase Hosting, grátis e na raiz do domínio.
-# Precisa de: segredo FIREBASE_SERVICE_ACCOUNT (chave JSON da conta de serviço) e variável FIREBASE_PROJECT_ID.
-# Sem eles, este passo é saltado e o site continua só no GitHub Pages.
+# Publica o site (jogos para a TV/Chromecast e comandos) no Firebase Hosting, grátis e na raiz do domínio:
+# https://risca-e-arrisca.web.app
+# Sem chave secreta: o GitHub prova quem é ao Google (Workload Identity Federation), e só este repositório
+# pode usar a conta de serviço github-deploy, que só tem permissões de Firebase Hosting.
 name: Publicar no Firebase Hosting
 on:
   push:
@@ -8,34 +9,25 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  id-token: write
 concurrency:
   group: firebase
   cancel-in-progress: true
+env:
+  FIREBASE_PROJECT: risca-e-arrisca
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Verificar configuração
-        id: cfg
-        env:
-          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          PID: ${{ vars.FIREBASE_PROJECT_ID }}
-        run: |
-          if [ -n "$SA" ] && [ -n "$PID" ]; then echo "ok=1" >> "$GITHUB_OUTPUT";
-          else echo "::notice::Firebase ainda não configurado (falta FIREBASE_SERVICE_ACCOUNT ou FIREBASE_PROJECT_ID). Ver docs/ANDROID-RISCA.md."; fi
       - uses: actions/checkout@v4
-        if: steps.cfg.outputs.ok
       - uses: actions/setup-node@v4
-        if: steps.cfg.outputs.ok
         with:
           node-version: 20
       - name: Montar o site estático
-        if: steps.cfg.outputs.ok
         run: npm ci && npm run build:site
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        if: steps.cfg.outputs.ok
+      - uses: google-github-actions/auth@v2
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
-          channelId: live
+          workload_identity_provider: projects/1027394540234/locations/global/workloadIdentityPools/github/providers/github-actions
+          service_account: github-deploy@risca-e-arrisca.iam.gserviceaccount.com
+      - name: Publicar
+        run: npx --yes firebase-tools@14 deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
