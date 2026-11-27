@@ -1,0 +1,10 @@
+{
+  "name": "Risca e Arrisca — Comando",
+  "short_name": "Risca",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f0e1",
+  "theme_color": "#f7f0e1",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

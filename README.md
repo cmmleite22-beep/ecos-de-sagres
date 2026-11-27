@@ -6,7 +6,8 @@ O jogo aparece na **TV (Chromecast ou qualquer browser)** em ecrã dividido e os
 - 📜 Guião: [docs/GUIAO.md](docs/GUIAO.md)
 - 🎮 Design do jogo: [docs/GDD.md](docs/GDD.md)
 - 🏗️ Arquitetura e decisão sobre os gráficos: [docs/ARQUITETURA.md](docs/ARQUITETURA.md)
-- 🥊 **Novo:** jogo de luta 1 contra 1 *Fúria Atlântica* (mesma base TV + telemóveis): [docs/LUTA.md](docs/LUTA.md) · TV em `/luta/tv/`
+- 🥊 Jogo de luta 1 contra 1 *Fúria Atlântica* (mesma base TV + telemóveis): [docs/LUTA.md](docs/LUTA.md) · TV em `/luta/tv/`
+- ✏️ **Novo:** jogo de desenhar e adivinhar *Risca e Arrisca* (2 a 8 pessoas): [docs/RISCA.md](docs/RISCA.md) · TV em `/risca/tv/`
 
 ## Experimentar já (rede de casa, 5 minutos)
 

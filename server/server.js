@@ -85,7 +85,9 @@ wss.on('connection', (ws) => {
     // TV cria (ou recria) uma sala
     if (msg.t === 'host') {
       const code = (msg.code && !rooms.has(msg.code)) ? msg.code : newCode();
-      rooms.set(code, { host: ws, controllers: new Map() });
+      // cada jogo pode pedir mais lugares (ex.: o jogo de desenho aceita até 8); por omissão 4
+      const max = Math.min(10, Math.max(1, Number(msg.max) || MAX_PLAYERS));
+      rooms.set(code, { host: ws, controllers: new Map(), max });
       ws.role = 'host'; ws.room = code;
       send(ws, { t: 'hosted', code });
       return;
@@ -95,7 +97,7 @@ wss.on('connection', (ws) => {
       const code = String(msg.code || '').toUpperCase().trim();
       const room = rooms.get(code);
       if (!room) { send(ws, { t: 'error', reason: 'Sala não encontrada' }); return; }
-      if (room.controllers.size >= MAX_PLAYERS) { send(ws, { t: 'error', reason: 'Sala cheia (máx. 4)' }); return; }
+      if (room.controllers.size >= room.max) { send(ws, { t: 'error', reason: `Sala cheia (máx. ${room.max})` }); return; }
       ws.role = 'ctrl'; ws.room = code; ws.id = 'p' + (nextId++);
       room.controllers.set(ws.id, ws);
       send(ws, { t: 'joined', id: ws.id, code });
@@ -144,5 +146,6 @@ server.listen(PORT, () => {
   console.log(`  TV:      http://localhost:${PORT}/tv/`);
   for (const ip of ips) console.log(`  Comando: http://${ip}:${PORT}/controller/`);
   console.log(`\n  Fúria Atlântica (luta) — TV: http://localhost:${PORT}/luta/tv/`);
+  console.log(`  Risca e Arrisca (desenho) — TV: http://localhost:${PORT}/risca/tv/`);
   console.log('');
 });
