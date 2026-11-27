@@ -11,7 +11,17 @@ const errs = [];
 const ok = (cond, msg) => { console.log((cond ? 'OK      ' : 'FALHOU  ') + msg); if (!cond) process.exitCode = 1; };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const tv = await b.newPage({ viewport: { width: 1280, height: 720 } });
+// cria uma categoria com um conjunto de palavras no telemóvel do chefe
+async function makeCat(ph, name, list) {
+  if (await ph.$eval('#cats', (e) => e.classList.contains('hidden'))) await ph.click('#cat-open');
+  await ph.fill('#cat-name', name);
+  await ph.click('#cat-add');
+  await ph.fill('#set-words', list);
+  await ph.click('#set-save');
+  await new Promise((r) => setTimeout(r, 300));
+}
+
+const tv = await b.newPage({ viewport: { width: 1280, height: 720 }, locale: 'pt-PT' });
 tv.on('pageerror', (e) => errs.push('TV ' + e.message));
 tv.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g/.test(m.text())) errs.push('TVc ' + m.text()); });
 await tv.goto(`${BASE}/risca/tv/`);
@@ -21,7 +31,7 @@ console.log('sala', code);
 
 const phones = [];
 for (const name of ['Joana', 'Miguel', 'Rita']) {
-  const ctx = await b.newContext({ ...devices['Pixel 7'] });
+  const ctx = await b.newContext({ ...devices['Pixel 7'], locale: 'pt-PT' });
   const ph = await ctx.newPage();
   ph.on('pageerror', (e) => errs.push('PH ' + e.message));
   await ph.goto(`${BASE}/risca/comando/?room=${code}`);
@@ -37,11 +47,10 @@ ok(await phones[1].$eval('#opts', (e) => e.classList.contains('ro')), 'só o che
 // o chefe escolhe 1 volta, 60 s e palavras próprias
 await phones[0].selectOption('#o-rounds', '1');
 await phones[0].selectOption('#o-time', '60');
-await phones[0].fill('#o-custom', 'recreio, lancheira, professora, quadro');
-await phones[0].selectOption('#o-theme', 'nossas');
+await makeCat(phones[0], 'Escola', 'recreio, lancheira, professora, quadro');
 await wait(400);
 const s = await tv.evaluate(() => __risca.settings);
-ok(s.rounds === 1 && s.time === 60 && s.theme === 'nossas' && s.custom.length === 4, `regras chegam à TV (${JSON.stringify(s)})`);
+ok(s.rounds === 1 && s.time === 60 && s.theme === 'propria' && s.themeName === 'Escola' && s.custom.length === 4, `regras chegam à TV (${JSON.stringify(s)})`);
 await tv.screenshot({ path: `${OUT}/tv-lobby.png` });
 await phones[0].screenshot({ path: `${OUT}/telemovel-sala.png` });
 

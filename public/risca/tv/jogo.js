@@ -3,12 +3,13 @@
 // Modos: clássico, equipas e "Passa o Risco" (desenho → palpite → desenho… em cadeia).
 import { RISCA, STATIC_MODE } from '../config.js';
 import { Quadro, paint, W, H } from '../quadro.js';
-import { escolher, escolherVarias, opcoes, comparar, padrao, parseCustom, norm, NIVEL, TEMA_LISTA } from '../palavras.js';
+import { escolher, escolherVarias, opcoes, comparar, padrao, parseCustom, norm, NIVEL, temaLista, temaValido } from '../palavras.js';
+import { tr, traduzirPagina, detectarLingua, linguaValida } from '../i18n.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const COLORS = ['#e23b3b', '#2457d6', '#2f9e44', '#ff8a1f', '#8a3fd1', '#e8559a', '#14a3a3', '#c79a00', '#8a5a2b', '#5a6b7a'];
-export const TEAMS = [{ name: 'Vermelha', color: '#e23b3b' }, { name: 'Azul', color: '#2457d6' }, { name: 'Verde', color: '#2f9e44' }, { name: 'Amarela', color: '#d69a00' }];
+export const TEAMS = [{ i: 0, color: '#e23b3b' }, { i: 1, color: '#2457d6' }, { i: 2, color: '#2f9e44' }, { i: 3, color: '#d69a00' }];
 const CHOOSE_S = 15, REVEAL_S = 7, FINAL_S = 60, VOTE_S = 25, PGUESS_S = 35, PSHOW_MS = 3200;
 const OFFLINE_KEEP_S = 180;  // quem sai a meio tem 3 minutos para voltar com o mesmo lugar
 const DRAWER_WAIT_S = 15;   // quem desenha e perde a ligação tem 15 s para voltar
@@ -22,7 +23,7 @@ export class Jogo {
     this.players = new Map(); // id -> { id, key, name, color, score, guessed, gain, team, online }
     this.order = [];
     this.ghosts = new Map();  // nome -> pontos de quem saiu de vez a meio
-    this.settings = { rounds: 3, time: 80, theme: 'misto', custom: [], mode: 'classico', teams: 2, kids: false };
+    this.settings = { rounds: 3, time: 80, theme: 'misto', themeName: '', custom: [], mode: 'classico', teams: 2, kids: false, lang: detectarLingua() };
     this.phase = 'lobby';
     this.round = 0; this.queue = []; this.turn = null;
     this.used = new Set(); this.gallery = [];
@@ -37,6 +38,10 @@ export class Jogo {
     net.on('room', (code) => this.hud.setRoom(code));
     setInterval(() => this.tick(), 200);
   }
+  // textos na língua do jogo
+  t(key, vars) { return tr(this.settings.lang, key, vars); }
+  teamName(i) { return this.t('team' + i); }
+  teamLabel(i) { return this.t('team', { t: this.teamName(i) }); }
   get leader() { return this.list.find((p) => p.online)?.id || null; }
   get list() { return this.order.map((id) => this.players.get(id)).filter(Boolean); }
   get online() { return this.list.filter((p) => p.online); }
@@ -54,11 +59,11 @@ export class Jogo {
       p = this.findKey(key);
       if (p) {
         this.rebind(p, id); back = !p.online; p.online = true; p.leftAt = 0;
-        if (back && this.phase !== 'lobby') { this.addFeed('sys', `${p.name} voltou.`); this.som.play('join'); }
+        if (back && this.phase !== 'lobby') { this.addFeed('sys', this.t('tv.back', { name: p.name })); this.som.play('join'); }
       }
     }
     if (!p) {
-      if (this.players.size >= RISCA.MAX_PLAYERS) { this.net.send(id, { t: 'error', reason: `A sala está cheia (máx. ${RISCA.MAX_PLAYERS}).` }); return; }
+      if (this.players.size >= RISCA.MAX_PLAYERS) { this.net.send(id, { t: 'error', code: 'full', n: RISCA.MAX_PLAYERS, reason: this.t('c.full', { n: RISCA.MAX_PLAYERS }) }); return; }
       name = String(name || 'Jogador').trim().slice(0, 14) || 'Jogador';
       let n = name, k = 2;
       while (this.list.some((q) => q.name.toLowerCase() === n.toLowerCase())) n = `${name} ${k++}`;
@@ -69,7 +74,7 @@ export class Jogo {
       this.ghosts.delete(n.toLowerCase());
       this.players.set(id, p); this.order.push(id);
       this.som.play('join');
-      if (this.phase !== 'lobby') this.addFeed('sys', `${n} entrou no jogo.`);
+      if (this.phase !== 'lobby') this.addFeed('sys', this.t('tv.joined', { name: n }));
     }
     this.net.send(id, { t: 'welcome', id, name: p.name, color: p.color });
     this.lobbyChanged();
@@ -110,7 +115,7 @@ export class Jogo {
     if (!p.online) return;
     p.online = false; p.leftAt = performance.now();
     if (this.phase === 'lobby') { this.lobbyChanged(); return; } // fica à espera uns segundos, caso volte
-    this.addFeed('sys', `${p.name} perdeu a ligação.`);
+    this.addFeed('sys', this.t('tv.lost', { name: p.name }));
     // quem desenha tem uns segundos para voltar antes de a vez acabar
     if (this.turn && this.turn.drawer === id && (this.phase === 'choose' || this.phase === 'draw')) {}
     else if (this.phase === 'draw' && this.allGuessed()) this.endTurn('all');
@@ -150,7 +155,7 @@ export class Jogo {
         else if (this.phase === 'pdraw' && P && !P.sub.has(id)) P.quadros.get(id)?.apply(m);
         break;
       case 'giveup':
-        if (this.phase === 'draw' && drawer) { this.addFeed('sys', `${p.name} desistiu deste desenho.`); this.endTurn('giveup'); }
+        if (this.phase === 'draw' && drawer) { this.addFeed('sys', this.t('tv.gaveup', { name: p.name })); this.endTurn('giveup'); }
         break;
       case 'guess':
         if (this.phase === 'draw' && !drawer && !p.guessed) this.guess(p, String(m.text || '').slice(0, 40)); break;
@@ -176,9 +181,11 @@ export class Jogo {
     const s = this.settings;
     if ([1, 2, 3, 4, 5].includes(+m.rounds)) s.rounds = +m.rounds;
     if ([45, 60, 80, 100, 120].includes(+m.time)) s.time = +m.time;
+    if (linguaValida(m.lang) && m.lang !== s.lang) { s.lang = m.lang; traduzirPagina(s.lang); }
     if (m.custom !== undefined) s.custom = parseCustom(Array.isArray(m.custom) ? m.custom.join(',') : m.custom);
-    if (TEMA_LISTA.some(([k]) => k === m.theme)) s.theme = m.theme;
-    if (s.theme === 'nossas' && s.custom.length < 3) s.theme = 'misto';
+    if (m.themeName !== undefined) s.themeName = String(m.themeName || '').trim().slice(0, 30);
+    if (m.theme !== undefined) s.theme = temaValido(s.lang, m.theme) ? m.theme : 'misto';
+    if (!temaValido(s.lang, s.theme) || (s.theme === 'propria' && s.custom.length < 3)) s.theme = 'misto';
     if (MODES.includes(m.mode)) s.mode = m.mode;
     if ([2, 3, 4].includes(+m.teams) && +m.teams !== s.teams) {
       s.teams = +m.teams;
@@ -217,14 +224,14 @@ export class Jogo {
         this.round++;
         if (this.round > this.settings.rounds) { this.afterTurns(); return; }
         this.queue = this.drawOrder();
-        if (!this.queue.length) { this.toLobby('Faltam jogadores.'); return; }
+        if (!this.queue.length) { this.toLobby(this.t('tv.notEnough')); return; }
       }
       const id = this.queue.shift();
       if (this.players.get(id)?.online) drawer = id;
     }
     for (const p of this.players.values()) { p.guessed = false; p.gain = 0; }
     this.turn = {
-      drawer, choices: escolher(this.settings.theme, this.settings.custom, this.used),
+      drawer, choices: escolher(this.settings.lang, this.settings.theme, this.settings.custom, this.used),
       word: null, lvl: 1, revealed: new Set(), hints: [], order: [], dur: this.settings.time, options: null,
     };
     this.quadro.reset();
@@ -240,7 +247,7 @@ export class Jogo {
     const n = Math.min(3, Math.floor(letters.length / 3));
     t.hints = Array.from({ length: n }, (_, k) => 0.45 + (0.4 * k) / Math.max(1, n - 1));
     t.letters = letters;
-    if (this.settings.kids) t.options = opcoes(this.settings.theme, this.settings.custom, t.word);
+    if (this.settings.kids) t.options = opcoes(this.settings.lang, this.settings.theme, this.settings.custom, t.word);
     this.setPhase('draw', t.dur);
   }
   setPhase(phase, secs) {
@@ -264,7 +271,7 @@ export class Jogo {
     if (this.phase !== 'final') {
       if (this.online.length < RISCA.MIN_PLAYERS) {
         this.lowSince ||= now;
-        if (now - this.lowSince > LOW_PLAYERS_S * 1000) { this.lowSince = 0; this.toLobby('O jogo parou: faltam jogadores ligados.'); return; }
+        if (now - this.lowSince > LOW_PLAYERS_S * 1000) { this.lowSince = 0; this.toLobby(this.t('tv.stopped')); return; }
       } else this.lowSince = 0;
     }
     const t0 = this.turn, dp = t0 && this.players.get(t0.drawer);
@@ -311,7 +318,7 @@ export class Jogo {
       t.order.push(p.id);
       const d = this.players.get(t.drawer);
       if (d) { const dg = Math.round(25 * mult / 5) * 5; d.gain += dg; d.score += dg; }
-      this.addFeed('ok', `${p.name} acertou!`, p.color);
+      this.addFeed('ok', this.t('tv.gotIt', { name: p.name }), p.color);
       this.som.play('right');
       this.net.send(p.id, { t: 'res', ok: 'yes', text, gain });
       this.net.send(p.id, { t: 'buzz', ms: 120 });
@@ -322,11 +329,11 @@ export class Jogo {
       }
       this.hud.render(); this.sendAll();
     } else if (r === 'close' && !this.settings.kids) {
-      this.addFeed('close', `${p.name} está quase!`, p.color);
+      this.addFeed('close', this.t('tv.close', { name: p.name }), p.color);
       this.som.play('close');
       this.net.send(p.id, { t: 'res', ok: 'close', text });
     } else {
-      if (this.settings.kids) this.addFeed('sys', `${p.name} errou.`);
+      if (this.settings.kids) this.addFeed('sys', this.t('tv.wrong', { name: p.name }));
       else this.addFeed('g', text, p.color, p.name);
       this.som.play('guess');
       this.net.send(p.id, { t: 'res', ok: 'no', text });
@@ -345,7 +352,7 @@ export class Jogo {
     t.why = why;
     const d = this.players.get(t.drawer);
     if (this.quadro.ops.length && d) this.gallery.push({ word: t.word, p: d, ops: this.quadro.ops.slice() });
-    this.addFeed('word', `A palavra era: ${t.word}`);
+    this.addFeed('word', this.t('tv.wordWas', { w: t.word }));
     this.som.play(t.order.length ? 'right' : 'end');
     this.setPhase('reveal', REVEAL_S);
   }
@@ -400,7 +407,7 @@ export class Jogo {
   // ---------------- Passa o Risco ----------------
   startPassa() {
     const ids = this.online.map((p) => p.id);
-    const words = escolherVarias(this.settings.theme, this.settings.custom, ids.length, this.used);
+    const words = escolherVarias(this.settings.lang, this.settings.theme, this.settings.custom, ids.length, this.used);
     words.forEach((w) => this.used.add(norm(w)));
     this.passa = {
       ids, n: ids.length, step: 0,
@@ -496,12 +503,12 @@ export class Jogo {
       t: 'lobby', phase: this.phase, leader: this.leader,
       players: this.list.map((p) => ({ id: p.id, name: p.name, color: p.color, score: p.score, team: p.team, online: p.online })),
       settings: { ...this.settings, custom: this.settings.custom.join(', ') },
-      teams: TEAMS.slice(0, this.settings.teams),
+      teams: TEAMS.slice(0, this.settings.teams).map((x) => ({ ...x, name: this.teamName(x.i) })),
     });
   }
   ranking() { return this.list.slice().sort((a, b) => b.score - a.score); }
   teamRanking() {
-    return TEAMS.slice(0, this.settings.teams).map((t, i) => ({ ...t, i, score: this.list.filter((p) => p.team === i).reduce((a, p) => a + p.score, 0) }))
+    return TEAMS.slice(0, this.settings.teams).map((t, i) => ({ ...t, i, name: this.teamName(i), score: this.list.filter((p) => p.team === i).reduce((a, p) => a + p.score, 0) }))
       .sort((a, b) => b.score - a.score);
   }
   sendAll() { for (const p of this.online) this.sendState(p.id); }
@@ -519,7 +526,7 @@ export class Jogo {
     };
     if (this.teamMode) {
       const tr = this.teamRanking();
-      m.team = { ...TEAMS[p.team], score: tr.find((x) => x.i === p.team)?.score || 0, rank: tr.findIndex((x) => x.i === p.team) + 1 };
+      m.team = { ...TEAMS[p.team], name: this.teamName(p.team), score: tr.find((x) => x.i === p.team)?.score || 0, rank: tr.findIndex((x) => x.i === p.team) + 1 };
     }
     if (t) {
       const d = this.players.get(t.drawer);
@@ -540,7 +547,7 @@ export class Jogo {
     }
     if (this.phase === 'final') {
       m.top = this.ranking().slice(0, 3).map((q) => ({ name: q.name, score: q.score, color: q.color }));
-      if (this.teamMode) m.teams = this.teamRanking().map((x) => ({ name: x.name, color: x.color, score: x.score }));
+      if (this.teamMode) m.teams = this.teamRanking().map((x) => ({ i: x.i, name: x.name, color: x.color, score: x.score }));
       m.gallery = this.gallery.map((g, i) => ({ i, word: g.word, name: g.p.name, mine: g.p === p, gold: this.golden.includes(i) }));
     }
     if (P && (this.phase === 'pdraw' || this.phase === 'pguess')) {
@@ -602,7 +609,7 @@ class Hud {
     $('#room-code').textContent = code || '····';
     const url = this.controllerUrl(code);
     if (code) this.qr(url); else $('#qr').innerHTML = '';
-    $('#ws-status').textContent = code ? '' : 'A ligar ao servidor…';
+    $('#ws-status').textContent = code ? '' : this.j.t('tv.connecting');
   }
   setCastMode(staticMode) {
     this.staticMode = !!staticMode;
@@ -631,16 +638,17 @@ class Hud {
     document.body.dataset.phase = ph;
     document.body.classList.toggle('teams', j.teamMode);
     if (ph === 'lobby') { this.lobby(); return; }
-    $('#round').textContent = ph === 'final' ? 'Fim do jogo' : ph === 'vote' ? 'Lápis de Ouro'
-      : j.passa ? `Passa o Risco · passo ${Math.min(j.passa.step, j.passa.n)} de ${j.passa.n}` : `Volta ${j.round} de ${j.settings.rounds}`;
+    const T = (k, v) => j.t(k, v);
+    $('#round').textContent = ph === 'final' ? T('tv.endGame') : ph === 'vote' ? T('golden')
+      : j.passa ? T('tv.passaStep', { a: Math.min(j.passa.step, j.passa.n), b: j.passa.n }) : T('tv.round', { a: j.round, b: j.settings.rounds });
     this.players();
     if (ph.startsWith('p')) { this.passaRender(); return; }
     const msg = $('#board-msg');
     const d = t && j.players.get(t.drawer);
-    const dn = d ? `<b style="color:${d.color}">${esc(d.name)}</b>` : 'Alguém';
+    const dn = d ? `<b style="color:${d.color}">${esc(d.name)}</b>` : T('tv.someone');
     if (ph === 'choose') {
-      $('#word').innerHTML = '<span class="wait">A escolher a palavra…</span>';
-      msg.innerHTML = `<div class="pencil">✏️</div><p>${dn} vai desenhar${j.teamMode && d ? ` <span class="small">(equipa ${TEAMS[d.team].name})</span>` : ''}.</p><p class="small">Está a escolher a palavra no telemóvel…</p>`;
+      $('#word').innerHTML = `<span class="wait">${T('tv.choosing')}</span>`;
+      msg.innerHTML = `<div class="pencil">✏️</div><p>${T('tv.willDraw', { name: dn })}${j.teamMode && d ? ` <span class="small">(${esc(j.teamLabel(d.team))})</span>` : ''}</p><p class="small">${T('tv.choosingPhone')}</p>`;
       msg.className = 'show';
     } else if (ph === 'draw') {
       this.word(padrao(t.word, t.revealed), t.lvl);
@@ -650,9 +658,9 @@ class Hud {
       this.word(t.word, t.lvl, true);
       $('#opts').innerHTML = '';
       const n = t.order.length;
-      const why = t.why === 'left' ? 'Quem desenhava perdeu a ligação.' : t.why === 'giveup' ? 'Quem desenhava desistiu.'
-        : t.why === 'all' ? 'Toda a gente acertou! 🎉' : n ? `${n} ${n === 1 ? 'pessoa acertou' : 'pessoas acertaram'}.` : 'Ninguém acertou desta vez.';
-      msg.innerHTML = `<p class="small">A palavra era</p><h2>${esc(t.word)}</h2><p class="small">${why}</p>`;
+      const why = t.why === 'left' ? T('tv.whyLeft') : t.why === 'giveup' ? T('tv.whyGiveup')
+        : t.why === 'all' ? T('tv.whyAll') : n ? (n === 1 ? T('tv.whyOne') : T('tv.whyMany', { n })) : T('tv.whyNone');
+      msg.innerHTML = `<p class="small">${T('tv.wordWasLabel')}</p><h2>${esc(t.word)}</h2><p class="small">${why}</p>`;
       msg.className = 'show reveal';
     } else if (ph === 'vote') {
       this.voteScreen();
@@ -662,23 +670,25 @@ class Hud {
   }
   lobby() {
     const j = this.j, list = j.list, s = j.settings;
-    const team = (p) => (j.teamMode ? `<span class="tm" style="--t:${TEAMS[p.team].color}">${TEAMS[p.team].name}</span>` : '');
+    const T = (k, v) => j.t(k, v);
+    const team = (p) => (j.teamMode ? `<span class="tm" style="--t:${TEAMS[p.team].color}">${esc(j.teamName(p.team))}</span>` : '');
     $('#lplayers').innerHTML = list.length ? list.map((p) => `
-      <li style="--c:${p.color}" class="${p.online ? '' : 'off'}"><i>${esc(p.name[0].toUpperCase())}</i><b>${esc(p.name)}</b>${team(p)}${p.id === j.leader ? '<em>chefe da sala</em>' : ''}</li>`).join('')
-      : '<li class="empty">Ainda ninguém… lê o código QR com o telemóvel.</li>';
-    const tema = TEMA_LISTA.find(([k]) => k === s.theme)?.[1] || '';
-    const mode = s.mode === 'equipas' ? `👥 ${s.teams} equipas` : s.mode === 'passa' ? '🔄 Passa o Risco' : '✏️ Clássico';
-    $('#lsettings').innerHTML = `<span>${mode}</span>${s.mode === 'passa' ? '' : `<span>🔁 ${s.rounds} ${s.rounds === 1 ? 'volta' : 'voltas'}</span>`}<span>⏱ ${s.time} s</span><span>🏷 ${esc(tema)}${s.theme === 'nossas' ? ` (${s.custom.length})` : ''}</span>${s.kids && s.mode !== 'passa' ? '<span>🧒 modo pequenos</span>' : ''}`;
+      <li style="--c:${p.color}" class="${p.online ? '' : 'off'}"><i>${esc(p.name[0].toUpperCase())}</i><b>${esc(p.name)}</b>${team(p)}${p.id === j.leader ? `<em>${T('tv.leader')}</em>` : ''}</li>`).join('')
+      : `<li class="empty">${T('tv.nobody')}</li>`;
+    const tema = s.theme === 'misto' ? T('misto') : s.theme === 'propria' ? (s.themeName || '★') : temaLista(s.lang).find(([k]) => k === s.theme)?.[1] || '';
+    const mode = s.mode === 'equipas' ? T('tv.nTeams', { n: s.teams }) : T('mode.' + s.mode);
+    const extra = s.custom.length ? ` (${s.theme === 'propria' ? '' : '+'}${s.custom.length})` : '';
+    $('#lsettings').innerHTML = `<span>${mode}</span>${s.mode === 'passa' ? '' : `<span>🔁 ${s.rounds === 1 ? T('tv.round1') : T('tv.roundsN', { n: s.rounds })}</span>`}<span>⏱ ${s.time} s</span><span>🏷 ${esc(tema)}${extra}</span>${s.kids && s.mode !== 'passa' ? `<span>${T('tv.kids')}</span>` : ''}`;
     $('#rules-classic').hidden = s.mode === 'passa';
     $('#rules-passa').hidden = s.mode !== 'passa';
     $('#start-hint').textContent = !list.length ? '' : j.online.length < RISCA.MIN_PLAYERS
-      ? 'Falta mais um jogador: são precisos pelo menos 2.' : 'Toquem em COMEÇAR num telemóvel!';
+      ? T('tv.needOne') : T('tv.tapStart');
   }
   word(text, lvl, open) {
     const chars = [...text].map((ch) => ch === ' ' ? '<i class="sp"></i>'
       : ch === '_' ? '<u></u>' : `<u class="${open ? 'open' : 'hint'}">${esc(ch.toUpperCase())}</u>`).join('');
     const letters = [...text].filter((c) => c !== ' ' && c !== '-').length;
-    $('#word').innerHTML = `<span class="letters">${chars}</span><span class="meta">${letters} letras · ${NIVEL[lvl].nome}</span>`;
+    $('#word').innerHTML = `<span class="letters">${chars}</span><span class="meta">${this.j.t('tv.letters', { n: letters })} · ${this.j.t('lvl' + lvl)}</span>`;
   }
   players() {
     const j = this.j, t = j.turn;
@@ -687,18 +697,19 @@ class Hud {
       const pos = rank.indexOf(p) + 1;
       const draw = t && t.drawer === p.id && j.phase !== 'final';
       const P = j.passa;
-      const st = !p.online ? '<span class="tag">💤 a voltar…</span>' : draw ? '<span class="tag">✏️ desenha</span>'
-        : p.guessed ? '<span class="tag ok">✔ acertou</span>'
-        : P && P.sub.has(p.id) && (j.phase === 'pdraw' || j.phase === 'pguess') ? '<span class="tag ok">✔ pronto</span>'
-        : j.phase === 'vote' && j.votes.has(p.id) ? '<span class="tag ok">✔ votou</span>' : '';
+      const tag = (k, ok) => `<span class="tag${ok ? ' ok' : ''}">${j.t(k)}</span>`;
+      const st = !p.online ? tag('tv.away') : draw ? tag('tv.drawing')
+        : p.guessed ? tag('tv.ok', 1)
+        : P && P.sub.has(p.id) && (j.phase === 'pdraw' || j.phase === 'pguess') ? tag('tv.ready', 1)
+        : j.phase === 'vote' && j.votes.has(p.id) ? tag('tv.voted', 1) : '';
       const gain = p.gain && (j.phase === 'reveal' || p.guessed || draw || j.phase === 'final') ? `<span class="gain">+${p.gain}</span>` : '';
       return `<li class="${draw ? 'draw' : ''} ${p.guessed ? 'ok' : ''} ${p.online ? '' : 'off'}" style="--c:${p.color}">
         <span class="pos">${j.passaMode ? '' : pos}</span><i>${esc(p.name[0].toUpperCase())}</i>
-        <div><b>${esc(p.name)}</b>${j.passaMode ? '' : `<span class="pts">${p.score} pts</span>`}</div>${st}${gain}</li>`;
+        <div><b>${esc(p.name)}</b>${j.passaMode ? '' : `<span class="pts">${j.t('pts', { n: p.score })}</span>`}</div>${st}${gain}</li>`;
     };
     if (j.teamMode) {
       $('#players').innerHTML = j.teamRanking().map((tm) => `
-        <li class="team" style="--c:${tm.color}"><b>Equipa ${tm.name}</b><span class="pts">${tm.score} pts</span></li>
+        <li class="team" style="--c:${tm.color}"><b>${esc(j.teamLabel(tm.i))}</b><span class="pts">${j.t('pts', { n: tm.score })}</span></li>
         ${j.list.filter((p) => p.team === tm.i).map(row).join('')}`).join('');
     } else $('#players').innerHTML = j.list.map(row).join('');
   }
@@ -747,7 +758,7 @@ class Hud {
       fig.style.setProperty('--c', p?.color || '#888');
       if (writing) fig.innerHTML = '<div class="writing">✍️</div>';
       else { const c = document.createElement('canvas'); fig.appendChild(c); canvases.push(c); }
-      fig.insertAdjacentHTML('beforeend', `<figcaption><b>${esc(p?.name || '?')}</b><span class="ok">✔ pronto</span></figcaption>`);
+      fig.insertAdjacentHTML('beforeend', `<figcaption><b>${esc(p?.name || '?')}</b><span class="ok">${this.j.t('tv.ready')}</span></figcaption>`);
       grid.appendChild(fig);
     }
     return canvases;
@@ -762,12 +773,12 @@ class Hud {
   }
   passaRender() {
     const j = this.j, P = j.passa, ph = j.phase;
-    if (ph === 'pdraw') $('#word').innerHTML = '<span class="wait">Todos a desenhar a sua palavra…</span>';
-    if (ph === 'pguess') $('#word').innerHTML = '<span class="wait">Todos a adivinhar o desenho que receberam…</span>';
+    if (ph === 'pdraw') $('#word').innerHTML = `<span class="wait">${j.t('tv.allDraw')}</span>`;
+    if (ph === 'pguess') $('#word').innerHTML = `<span class="wait">${j.t('tv.allGuess')}</span>`;
     if (ph === 'pdraw' || ph === 'pguess') { this.passaStatus(); return; }
     // pshow: mostra a cadeia atual, uma peça de cada vez
     const s = P.show, chain = P.chains[s.c];
-    $('#word').innerHTML = `<span class="wait">A cadeia de <b style="color:${chain.owner.color}">${esc(chain.owner.name)}</b> (${s.c + 1} de ${P.n})</span>`;
+    $('#word').innerHTML = `<span class="wait">${j.t('tv.chainOf', { name: `<b style="color:${chain.owner.color}">${esc(chain.owner.name)}</b>`, a: s.c + 1, b: P.n })}</span>`;
     const box = $('#pshow');
     box.innerHTML = '';
     chain.items.slice(0, s.i + 1).forEach((it, k) => {
@@ -775,16 +786,16 @@ class Hud {
       card.className = 'card ' + it.k + (k === s.i ? ' new' : '');
       if (it.k === 'draw') {
         card.appendChild(this.thumb(it.ops, 320, 240));
-        card.insertAdjacentHTML('beforeend', `<span>desenhou <b style="color:${it.p.color}">${esc(it.p.name)}</b></span>`);
+        card.insertAdjacentHTML('beforeend', `<span>${j.t('tv.drewBy', { name: `<b style="color:${it.p.color}">${esc(it.p.name)}</b>` })}</span>`);
       } else {
-        card.innerHTML = `<b class="txt">${esc(it.text)}</b><span>${it.k === 'word' ? 'palavra secreta' : `escreveu <b style="color:${it.p.color}">${esc(it.p.name)}</b>`}</span>`;
+        card.innerHTML = `<b class="txt">${esc(it.text)}</b><span>${it.k === 'word' ? j.t('tv.secret') : j.t('tv.wroteBy', { name: `<b style="color:${it.p.color}">${esc(it.p.name)}</b>` })}</span>`;
       }
       if (k > 0) box.insertAdjacentHTML('beforeend', '<i class="arrow">➜</i>');
       box.appendChild(card);
     });
     const last = s.i === chain.items.length - 1;
     const ok = last && norm(chain.items[s.i].text || '') === norm(chain.items[0].text);
-    $('#pshow-end').textContent = !last ? '' : chain.items[s.i].k === 'text' ? (ok ? 'Chegou intacta! 🎉' : `Começou em «${chain.items[0].text}»… 😂`) : '';
+    $('#pshow-end').textContent = !last ? '' : chain.items[s.i].k === 'text' ? (ok ? j.t('tv.intact') : j.t('tv.started', { w: chain.items[0].text })) : '';
   }
 
   // ---------- votação e fim ----------
@@ -795,26 +806,26 @@ class Hud {
       const fig = document.createElement('figure');
       if (this.j.golden.includes(i)) fig.classList.add('gold');
       fig.appendChild(this.thumb(g.ops, 240, 180));
-      fig.insertAdjacentHTML('beforeend', `${opts.numbers ? `<span class="num">${i + 1}</span>` : ''}<figcaption><b>${esc(g.word)}</b><span style="color:${g.p.color}">por ${esc(g.p.name)}</span></figcaption>`);
+      fig.insertAdjacentHTML('beforeend', `${opts.numbers ? `<span class="num">${i + 1}</span>` : ''}<figcaption><b>${esc(g.word)}</b><span style="color:${g.p.color}">${esc(this.j.t('tv.by', { name: g.p.name }))}</span></figcaption>`);
       box.appendChild(fig);
     });
   }
   voteScreen() {
     if (this.votedFor !== this.j.gallery.length) { this.galleryInto($('#vgallery'), { numbers: true }); this.votedFor = this.j.gallery.length; }
     const voters = this.j.online.filter((p) => this.j.canVote(p)).length;
-    $('#vcount').textContent = `${this.j.votes.size} de ${voters} já votaram`;
+    $('#vcount').textContent = this.j.t('tv.votes', { a: this.j.votes.size, b: voters });
   }
   finalScreen() {
     this.votedFor = -1;
     const j = this.j, medal = ['🥇', '🥈', '🥉'];
-    const items = j.passaMode ? [] : j.teamMode ? j.teamRanking().map((t) => ({ name: `Equipa ${t.name}`, score: t.score, color: t.color }))
+    const items = j.passaMode ? [] : j.teamMode ? j.teamRanking().map((t) => ({ name: j.teamLabel(t.i), ini: t.name, score: t.score, color: t.color }))
       : j.ranking().map((p) => ({ name: p.name, score: p.score, color: p.color }));
-    $('#final h1').textContent = j.passaMode ? 'Fim do Passa o Risco!' : 'Pódio';
+    $('#final h1').textContent = j.passaMode ? j.t('passaEnd') : j.t('tv.podium');
     $('#podium').innerHTML = items.slice(0, 3).map((p, i) => `
-      <div class="step s${i + 1}" style="--c:${p.color}"><span class="m">${medal[i]}</span><i>${esc(p.name.replace('Equipa ', '')[0].toUpperCase())}</i><b>${esc(p.name)}</b><span>${p.score} pts</span><div class="block">${i + 1}</div></div>`).join('')
-      + (items.length > 3 ? `<p class="rest">${items.slice(3).map((p, i) => `${i + 4}.º ${esc(p.name)} (${p.score})`).join(' · ')}</p>` : '');
+      <div class="step s${i + 1}" style="--c:${p.color}"><span class="m">${medal[i]}</span><i>${esc((p.ini || p.name)[0].toUpperCase())}</i><b>${esc(p.name)}</b><span>${j.t('pts', { n: p.score })}</span><div class="block">${i + 1}</div></div>`).join('')
+      + (items.length > 3 ? `<p class="rest">${items.slice(3).map((p, i) => `${j.t('nth', { n: i + 4 })} ${esc(p.name)} (${p.score})`).join(' · ')}</p>` : '');
     const g = j.golden.map((i) => j.gallery[i]).filter(Boolean);
-    $('#golden').innerHTML = g.length ? `🏅 Lápis de Ouro: ${g.map((x) => `<b>${esc(x.word)}</b> por <b style="color:${x.p.color}">${esc(x.p.name)}</b>`).join(' e ')} (+60 pontos)` : '';
+    $('#golden').innerHTML = g.length ? j.t('tv.goldenLine', { list: g.map((x) => j.t('tv.wordBy', { w: `<b>${esc(x.word)}</b>`, name: `<b style="color:${x.p.color}">${esc(x.p.name)}</b>` })).join(j.t('tv.and')) }) : '';
     this.galleryInto($('#gallery'), { limit: 8 });
     $('#gallery-t').style.display = j.gallery.length ? '' : 'none';
   }

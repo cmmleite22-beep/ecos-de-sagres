@@ -16,15 +16,16 @@
 <!-- 1: entrar -->
 <section id="s-join" class="screen">
   <h1><span class="r">Risca</span> <span class="e">e</span> <span class="a">Arrisca</span></h1>
-  <p class="sub">Desenha e adivinha na TV</p>
-  <label>O teu nome <input id="name" maxlength="12" autocomplete="nickname" placeholder="Jogador"></label>
+  <p class="sub" data-i18n="c.sub">Desenha e adivinha na TV</p>
+  <label class="lang-l"><span data-i18n="c.lang">Língua</span> <select id="ui-lang"></select></label>
+  <label><span data-i18n="c.name">O teu nome</span> <input id="name" maxlength="12" autocomplete="nickname" placeholder="Jogador" data-i18n-ph="c.player"></label>
   <div class="row" id="code-row">
-    <label class="code">Código da sala <input id="code" maxlength="4" autocapitalize="characters" placeholder="ABCD"></label>
-    <button id="btn-join" class="primary">Entrar</button>
+    <label class="code"><span data-i18n="c.room">Código da sala</span> <input id="code" maxlength="4" autocapitalize="characters" placeholder="ABCD"></label>
+    <button id="btn-join" class="primary" data-i18n="c.join">Entrar</button>
   </div>
   <button id="btn-cast" class="cast hidden">
     <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm0-4v2a9 9 0 0 1 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
-    Ligar ao Chromecast
+    <span data-i18n="c.cast">Ligar ao Chromecast</span>
   </button>
   <p id="join-err" class="err"></p>
   <p id="cast-state" class="hint"></p>
@@ -32,24 +33,37 @@
 
 <!-- 2: sala de espera -->
 <section id="s-lobby" class="screen hidden">
-  <h2>Sala de espera</h2>
+  <h2 data-i18n="c.lobby">Sala de espera</h2>
   <ul id="lp"></ul>
-  <div id="team-pick" class="hidden"><p class="hint">Escolhe a tua equipa:</p><div id="team-btns"></div></div>
+  <div id="team-pick" class="hidden"><p class="hint" data-i18n="c.pickTeam">Escolhe a tua equipa:</p><div id="team-btns"></div></div>
   <div id="opts">
     <p class="hint" id="opts-who"></p>
-    <label>Modo de jogo <select id="o-mode"><option value="classico">✏️ Clássico</option><option value="equipas">👥 Equipas</option><option value="passa">🔄 Passa o Risco</option></select></label>
+    <label><span data-i18n="c.gameLang">Língua do jogo</span> <select id="o-lang"></select></label>
+    <label><span data-i18n="c.mode">Modo de jogo</span> <select id="o-mode"><option value="classico" data-i18n="mode.classico">✏️ Clássico</option><option value="equipas" data-i18n="mode.equipas">👥 Equipas</option><option value="passa" data-i18n="mode.passa">🔄 Passa o Risco</option></select></label>
     <p class="hint mode-help" id="mode-help"></p>
-    <label id="teams-l" class="hidden">Número de equipas <select id="o-teams"><option>2</option><option>3</option><option>4</option></select></label>
-    <label id="rounds-l">Voltas <select id="o-rounds"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
-    <label>Tempo para desenhar <select id="o-time"><option value="45">45 s</option><option value="60">60 s</option><option value="80" selected>80 s</option><option value="100">100 s</option><option value="120">120 s</option></select></label>
-    <label>Tema <select id="o-theme"></select></label>
-    <label class="check" id="kids-l"><input type="checkbox" id="o-kids"> 🧒 Modo pequenos: escolher a resposta entre 4, sem escrever</label>
-    <label id="custom-l">As nossas palavras <small>(separadas por vírgulas; pelo menos 3)</small>
-      <select id="o-lists"><option value="">— listas guardadas neste telemóvel —</option></select>
-      <textarea id="o-custom" rows="3" placeholder="ex.: Ponta Delgada, professora, recreio, lancheira"></textarea>
-      <span class="list-row"><input id="o-listname" maxlength="30" placeholder="Nome da lista (ex.: Ciências 5.º ano)"><button id="list-save" type="button" class="mini">Guardar</button><button id="list-del" type="button" class="mini">Apagar</button></span></label>
+    <label id="teams-l" class="hidden"><span data-i18n="c.teams">Número de equipas</span> <select id="o-teams"><option>2</option><option>3</option><option>4</option></select></label>
+    <label id="rounds-l"><span data-i18n="c.rounds">Voltas</span> <select id="o-rounds"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+    <label><span data-i18n="c.time">Tempo para desenhar</span> <select id="o-time"><option value="45">45 s</option><option value="60">60 s</option><option value="80" selected>80 s</option><option value="100">100 s</option><option value="120">120 s</option></select></label>
+    <label><span data-i18n="c.theme">Tema</span> <select id="o-theme"></select></label>
+    <p class="hint" id="theme-info"></p>
+    <button id="cat-open" type="button" class="mini wide" data-i18n="c.manage">✏️ Categorias e palavras</button>
+    <div id="cats" class="hidden">
+      <span class="list-row"><input id="cat-name" maxlength="30" data-i18n-ph="c.catName"><button id="cat-add" type="button" class="mini" data-i18n="c.create">Criar</button></span>
+      <h4 id="sets-title"></h4>
+      <p class="hint" id="sets-info"></p>
+      <ul id="sets"></ul>
+      <div id="set-edit" class="hidden">
+        <input id="set-name" maxlength="30" data-i18n-ph="c.setName">
+        <small data-i18n="c.setWords">Palavras, separadas por vírgulas (pelo menos 3)</small>
+        <textarea id="set-words" rows="4" data-i18n-ph="c.setWordsPh"></textarea>
+        <span class="list-row"><button id="set-save" type="button" class="mini" data-i18n="c.saveSet">Guardar</button><button id="set-cancel" type="button" class="mini" data-i18n="c.cancel">Cancelar</button></span>
+      </div>
+      <span class="list-row"><button id="set-new" type="button" class="mini" data-i18n="c.newSet">+ Novo conjunto de palavras</button><button id="cat-del" type="button" class="mini danger" data-i18n="c.delCat">Apagar esta categoria</button></span>
+      <p class="hint" data-i18n="c.onPhone">Fica tudo guardado neste telemóvel.</p>
+    </div>
+    <label class="check" id="kids-l"><input type="checkbox" id="o-kids"> <span data-i18n="c.kids">🧒 Modo pequenos: escolher a resposta entre 4, sem escrever</span></label>
   </div>
-  <button id="btn-start" class="primary big">COMEÇAR</button>
+  <button id="btn-start" class="primary big" data-i18n="c.start">COMEÇAR</button>
   <p id="lobby-hint" class="hint"></p>
 </section>
 
@@ -59,21 +73,21 @@
   <div class="big-emoji" id="msg-emoji">✏️</div>
   <h2 id="msg-title"></h2>
   <p id="msg-text"></p>
-  <button id="msg-save" class="cast hidden">💾 Guardar o meu desenho</button>
-  <button id="msg-next" class="primary big hidden">Seguinte ▶</button>
+  <button id="msg-save" class="cast hidden" data-i18n="c.savePic">💾 Guardar o meu desenho</button>
+  <button id="msg-next" class="primary big hidden" data-i18n="c.next">Seguinte ▶</button>
 </section>
 
 <!-- escolher palavra -->
 <section id="s-choose" class="screen hidden">
   <div class="bar"><span class="me"></span><span class="pts"></span><span class="clock"></span></div>
-  <h2>É a tua vez de desenhar!</h2>
-  <p class="hint">Escolhe uma palavra. Só tu a vês.</p>
+  <h2 data-i18n="c.yourTurn">É a tua vez de desenhar!</h2>
+  <p class="hint" data-i18n="c.chooseHint">Escolhe uma palavra. Só tu a vês.</p>
   <div id="choices"></div>
 </section>
 
 <!-- desenhar -->
 <section id="s-draw" class="screen hidden">
-  <div class="bar"><span class="secret">Desenha: <b id="d-word"></b></span><span id="d-right"></span><span class="clock"></span></div>
+  <div class="bar"><span class="secret"><span data-i18n="c.draw">Desenha:</span> <b id="d-word"></b></span><span id="d-right"></span><span class="clock"></span></div>
   <div id="draw-body">
     <div id="pad-wrap"><canvas id="pad"></canvas></div>
     <div id="tools">
@@ -82,14 +96,14 @@
         <div id="sizes"></div>
       </div>
       <div class="tool-row">
-        <button class="tool sel" data-tool="pen" title="Lápis">✏️<span>Lápis</span></button>
-        <button class="tool" data-tool="eraser" title="Borracha">🧽<span>Borracha</span></button>
-        <button class="tool" data-tool="fill" title="Balde">🪣<span>Balde</span></button>
-        <button class="tool" id="t-undo" title="Desfazer">↩️<span>Desfazer</span></button>
-        <button class="tool" id="t-clear" title="Limpar">🗑️<span>Limpar</span></button>
+        <button class="tool sel" data-tool="pen" data-i18n-title="c.pen">✏️<span data-i18n="c.pen">Lápis</span></button>
+        <button class="tool" data-tool="eraser" data-i18n-title="c.eraser">🧽<span data-i18n="c.eraser">Borracha</span></button>
+        <button class="tool" data-tool="fill" data-i18n-title="c.fill">🪣<span data-i18n="c.fill">Balde</span></button>
+        <button class="tool" id="t-undo" data-i18n-title="c.undo">↩️<span data-i18n="c.undo">Desfazer</span></button>
+        <button class="tool" id="t-clear" data-i18n-title="c.clear">🗑️<span data-i18n="c.clear">Limpar</span></button>
       </div>
-      <button id="t-giveup" class="link">Desistir deste desenho</button>
-      <button id="t-done" class="primary hidden">Pronto ✓</button>
+      <button id="t-giveup" class="link" data-i18n="c.giveup">Desistir deste desenho</button>
+      <button id="t-done" class="primary hidden" data-i18n="c.done">Pronto ✓</button>
     </div>
   </div>
 </section>
@@ -101,11 +115,11 @@
   <div id="g-pattern"></div>
   <div id="g-options" class="hidden"></div>
   <form id="g-form" autocomplete="off">
-    <input id="g-input" maxlength="30" placeholder="Escreve o teu palpite" enterkeyhint="send" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <input id="g-input" maxlength="30" placeholder="Escreve o teu palpite" data-i18n-ph="c.guessPh" enterkeyhint="send" autocapitalize="off" autocorrect="off" spellcheck="false">
     <button class="primary" type="submit">➤</button>
   </form>
   <p id="g-fb" class="fb"></p>
-  <div id="g-done" class="hidden"><div class="big-emoji">🎉</div><h2>Acertaste!</h2><p id="g-gain"></p><p class="hint">Espera pelos outros… e manda reações para a TV:</p></div>
+  <div id="g-done" class="hidden"><div class="big-emoji">🎉</div><h2 data-i18n="c.gotIt">Acertaste!</h2><p id="g-gain"></p><p class="hint" data-i18n="c.waitOthers">Espera pelos outros… e manda reações para a TV:</p></div>
   <ul id="g-list"></ul>
   <div id="reacts"></div>
 </section>
@@ -113,20 +127,20 @@
 <!-- Passa o Risco: adivinhar o desenho recebido -->
 <section id="s-pguess" class="screen hidden">
   <div class="bar"><span class="me"></span><span id="pg-step"></span><span class="clock"></span></div>
-  <h2>O que é este desenho?</h2>
+  <h2 data-i18n="c.whatIs">O que é este desenho?</h2>
   <img id="pg-img" alt="desenho para adivinhar">
   <form id="pg-form" autocomplete="off">
-    <input id="pg-input" maxlength="30" placeholder="Escreve o que achas que é" enterkeyhint="send" autocapitalize="off" spellcheck="false">
+    <input id="pg-input" maxlength="30" placeholder="Escreve o que achas que é" data-i18n-ph="c.whatPh" enterkeyhint="send" autocapitalize="off" spellcheck="false">
     <button class="primary" type="submit">➤</button>
   </form>
-  <p id="pg-done" class="fb yes hidden">Enviado! Espera pelos outros…</p>
+  <p id="pg-done" class="fb yes hidden" data-i18n="c.sent">Enviado! Espera pelos outros…</p>
 </section>
 
 <!-- Lápis de Ouro -->
 <section id="s-vote" class="screen hidden">
   <div class="big-emoji">🏅</div>
-  <h2>Lápis de Ouro</h2>
-  <p class="hint">Vota no melhor desenho (os números estão na TV). Podes mudar o voto.</p>
+  <h2 data-i18n="golden">Lápis de Ouro</h2>
+  <p class="hint" data-i18n="c.goldenHint">Vota no melhor desenho (os números estão na TV). Podes mudar o voto.</p>
   <div id="v-list"></div>
 </section>
 
@@ -135,8 +149,8 @@
   <div class="big-emoji" id="f-emoji">🏆</div>
   <h2 id="f-title"></h2>
   <ol id="f-top"></ol>
-  <button id="btn-again" class="primary big">JOGAR DE NOVO</button>
-  <h3 id="f-gal-t">Guardar desenhos no telemóvel</h3>
+  <button id="btn-again" class="primary big" data-i18n="c.again">JOGAR DE NOVO</button>
+  <h3 id="f-gal-t" data-i18n="c.saveGal">Guardar desenhos no telemóvel</h3>
   <div id="f-gal"></div>
 </section>
 

@@ -2,8 +2,8 @@
 :root {
   --ink: #23202a; --paper: #f7f0e1; --line: rgba(60, 110, 190, 0.13);
   --red: #e23b3b; --blue: #2457d6; --yellow: #ffcf1f; --green: #2f9e44;
-  --hand: "Patrick Hand", "Comic Sans MS", system-ui, sans-serif;
-  --marker: "Permanent Marker", "Comic Sans MS", Impact, sans-serif;
+  --hand: "Patrick Hand", "ZCOOL KuaiLe", "Comic Sans MS", system-ui, sans-serif;
+  --marker: "Permanent Marker", "ZCOOL KuaiLe", "Comic Sans MS", Impact, sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; }
