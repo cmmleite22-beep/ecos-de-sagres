@@ -13,7 +13,7 @@ export const CONFIG = {
 
 // Modo estático: alojamento sem servidor Node (ex.: GitHub Pages). Não há salas WebSocket;
 // os telemóveis ligam-se só pelo botão Chromecast e as mensagens vão pelo canal Cast.
-export const STATIC_MODE = /\.github\.io$/.test(location.hostname) || new URLSearchParams(location.search).has('static');
+export const STATIC_MODE = /\.(github\.io|web\.app|firebaseapp\.com|pages\.dev)$/.test(location.hostname) || new URLSearchParams(location.search).has('static');
 
 export function wsUrl() {
   if (CONFIG.WS_URL) return CONFIG.WS_URL;
