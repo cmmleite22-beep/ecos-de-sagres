@@ -6,7 +6,7 @@ export const RISCA = {
   // ID da aplicação Cast deste jogo (https://cast.google.com/publish → Add new application → Custom Receiver,
   // URL https://cmmleite22-beep.github.io/ecos-de-sagres/risca/tv/?cast=1). Enquanto for 'CHANGE_ME',
   // o botão Chromecast fica escondido e joga-se pelo código da sala (npm start).
-  CAST_APP_ID: 'CHANGE_ME',
+  CAST_APP_ID: '6179B961',
   CAST_NAMESPACE: 'urn:x-cast:pt.riscaearrisca.game',
   MAX_PLAYERS: 8,
   MIN_PLAYERS: 2,
