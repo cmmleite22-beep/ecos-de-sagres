@@ -32,7 +32,7 @@ este repositório) e usa a conta de serviço `github-deploy`, que só tem permis
 Passos seguintes:
    - na consola Google Cast, mudar o receiver para `https://risca-e-arrisca.web.app/risca/tv/?cast=1` e o sender para `https://risca-e-arrisca.web.app/risca/comando/`;
    - criar a variável `RISCA_SITE_URL` = `https://risca-e-arrisca.web.app`;
-   - pôr o `assetlinks.json` em `public/.well-known/` e voltar a compilar a app.
+   - feito: `public/.well-known/assetlinks.json` com a chave de upload fixa (falta juntar a da Play App Signing, ver abaixo).
 
 Outras opções grátis: Cloudflare Pages (build `npm ci && npm run build:site`, pasta `_site`) e Netlify.
 

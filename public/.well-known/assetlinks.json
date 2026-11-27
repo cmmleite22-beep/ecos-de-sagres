@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "pt.riscaearrisca.app",
+      "sha256_cert_fingerprints": [
+        "10:1D:20:96:9A:60:08:A2:9A:C3:BB:B9:AD:B7:0A:FC:53:97:1A:3E:55:1B:F8:F8:DB:75:AB:0C:8E:78:01:A9"
+      ]
+    }
+  }
+]
