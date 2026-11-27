@@ -39,8 +39,8 @@ jobs:
         run: |
           set -e
           if [ -n "$KEYSTORE_B64" ]; then
-            # Tolera o que vem colado do Cloud Shell: espaços, quebras de linha e o "nome@cloudshell:~$" do terminal.
-            CLEAN=$(printf '%s' "$KEYSTORE_B64" | sed -E 's/(cmmleite22)?@cloudshell:[^$]*\$//g' | tr -s ' \t\r' '\n\n\n' | awk '{ if (length($0) > length(best)) best = $0 } END { print best }')
+            # Tolera o que vem colado do Cloud Shell: linhas partidas pelo terminal, espaços, o comando e o "nome@cloudshell:~$".
+            CLEAN=$(printf '%s' "$KEYSTORE_B64" | sed -E 's/(cmmleite22)?@cloudshell:[^$]*\$//g; s/base64 +-w0 +risca\.keystore( *; *echo)?//g' | tr -d ' \t\r\n')
             if ! printf '%s' "$CLEAN" | base64 -d > /tmp/risca.keystore 2>/dev/null; then
               echo "::error::O segredo RISCA_KEYSTORE_B64 não é texto base64 válido. Volte a copiar só o bloco de letras do comando base64 (ver docs/ANDROID-RISCA.md)."
               exit 1
