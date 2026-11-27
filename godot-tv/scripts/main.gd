@@ -101,14 +101,18 @@ var kb_on := false
 func _ready() -> void:
 	var mobile := OS.has_feature("mobile") or OS.has_feature("android")
 	high = not mobile
-	render_scale = 0.8 if mobile else 1.0
+	render_scale = 0.5 if mobile else 1.0
 	Engine.physics_ticks_per_second = 60 if mobile else 120
+	if mobile:
+		Engine.max_physics_steps_per_frame = 4  # numa TV lenta o jogo abranda em vez de encravar
 	for a in OS.get_cmdline_user_args():
-		if a == "--low": high = false
+		if a == "--low":
+			high = false
+			render_scale = 0.5
 		if a == "--no-autoaim": auto_aim = false
 	get_viewport().disable_3d = true   # cada vista tem a sua SubViewport
 	_setup_environment()
-	M = Mats.new()
+	M = Mats.new(not high)
 	world = Phys.new()
 	level = Level1.new(self, world, M, high)
 	enemies = Enemies.new(self, world, Level1.ENEMY_SPOTS)
@@ -164,7 +168,7 @@ func _setup_environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.45
+	env.ambient_light_energy = 0.45 if high else 0.6
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 0.95
@@ -186,9 +190,9 @@ func _setup_environment() -> void:
 	sun = DirectionalLight3D.new()
 	sun.light_color = Color(1.0, 0.94, 0.84)
 	sun.light_energy = 2.1
-	sun.shadow_enabled = true
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.directional_shadow_max_distance = 70.0 if high else 45.0
+	sun.shadow_enabled = high
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if high else DirectionalLight3D.SHADOW_ORTHOGONAL
+	sun.directional_shadow_max_distance = 70.0 if high else 30.0
 	sun.shadow_bias = 0.04
 	sun.shadow_normal_bias = 1.2
 	sun.rotation = Vector3(deg_to_rad(-38), deg_to_rad(150), 0)
@@ -825,6 +829,7 @@ func _process(dt: float) -> void:
 		hud_dirty = false
 		sync_lobby()
 	hud.frame(players, dt, MAX_HP)
+	_adapt(dt)
 
 # ------------------------------------------------------------------ comando da TV e teclado (testes)
 func _unhandled_input(e: InputEvent) -> void:
@@ -859,3 +864,45 @@ func _keyboard() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		get_tree().quit()
+
+# ------------------------------------------------------------------ qualidade adaptativa
+# Mede os fps e ajusta a resolução 3D (e as sombras) à TV: abaixo de 26 fps baixa, acima de 55 sobe.
+var _q_acc := 0.0
+var _q_n := 0
+var _q_wait := 3.0
+
+func _adapt(dt: float) -> void:
+	_q_wait -= dt
+	_q_acc += dt
+	_q_n += 1
+	if _q_acc < 2.0:
+		return
+	var fps := _q_n / _q_acc
+	_q_acc = 0.0
+	_q_n = 0
+	if _q_wait > 0.0:
+		_update_info(fps)
+		return
+	var changed := false
+	if fps < 26.0:
+		if sun.shadow_enabled:
+			sun.shadow_enabled = false; changed = true
+		elif env.glow_enabled:
+			env.glow_enabled = false; changed = true
+		elif render_scale > 0.36:
+			render_scale = maxf(0.35, render_scale - 0.1); changed = true
+	elif fps > 55.0 and render_scale < (1.0 if high else 0.75):
+		render_scale = minf(1.0, render_scale + 0.05); changed = true
+	if changed:
+		for p in players:
+			p.vp.scaling_3d_scale = render_scale
+			p.vp.msaa_3d = Viewport.MSAA_DISABLED if fps < 26.0 else p.vp.msaa_3d
+		over_vp.scaling_3d_scale = render_scale
+		_q_wait = 2.0
+	_update_info(fps)
+
+func _update_info(fps: float) -> void:
+	var method := str(ProjectSettings.get_setting("rendering/renderer/rendering_method"))
+	if RenderingServer.get_rendering_device() == null:
+		method = "gl"
+	hud.fps_lbl.text = "%d fps · %d%% · %s · %s" % [int(round(fps)), int(render_scale * 100), method, RenderingServer.get_video_adapter_name()]

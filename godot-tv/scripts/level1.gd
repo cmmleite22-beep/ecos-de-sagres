@@ -160,7 +160,7 @@ func torch(x: float, y: float, z: float, light := true) -> void:
 	glow.position.y = 1.4
 	g.add_child(glow)
 	var pl: OmniLight3D = null
-	if light and lights < (10 if high else 5):
+	if light and lights < (10 if high else 2):
 		pl = OmniLight3D.new()
 		pl.light_color = Color(1.0, 0.54, 0.23)
 		pl.light_energy = 2.2

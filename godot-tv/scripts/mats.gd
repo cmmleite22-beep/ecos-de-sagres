@@ -43,7 +43,7 @@ void fragment() {
 	tz = vec3(tz.xy + wnrm.xy, abs(tz.z) * wnrm.z);
 	vec3 wn = normalize(tx.zyx * bl.x + ty.xzy * bl.y + tz.xyz * bl.z);
 	float n = texture(moss_noise, wpos.xz * 0.11 + wpos.y * 0.05).r;
-	float mo = moss * smoothstep(0.55, 0.85, wn.y * 0.7 + n * 0.6 - 0.15);
+	float mo = moss * smoothstep(0.75, 0.98, wn.y * 0.5 + n * 0.6);
 	// musgo também nas fendas da base das paredes
 	mo = max(mo, moss * 0.8 * smoothstep(0.62, 0.9, n) * (1.0 - smoothstep(0.0, 2.5, fract(wpos.y / 6.0) * 6.0)));
 	vec3 col = a * tint;
@@ -88,6 +88,68 @@ void fragment() {
 	NORMAL_MAP = tn;
 	NORMAL_MAP_DEPTH = 0.8;
 	ROUGHNESS = mix(0.9, 0.75, rock);
+}
+"""
+
+# versão leve (TVs fracas): uma só projeção (a do eixo dominante) e 3 leituras de textura em vez de 10
+const TRIPLANAR_LO := """
+shader_type spatial;
+uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D rough_tex : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform sampler2D moss_noise : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec3 tint : source_color = vec3(1.0);
+uniform float tex_scale = 0.35;
+uniform float normal_strength = 1.0;
+uniform float rough_mul = 1.0;
+uniform float moss = 0.0;
+uniform vec3 moss_color : source_color = vec3(0.23, 0.31, 0.11);
+uniform float wet = 0.0;
+varying vec3 wpos;
+varying vec3 wnrm;
+void vertex() {
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wnrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+void fragment() {
+	vec3 an = abs(wnrm);
+	vec2 uv = an.y > max(an.x, an.z) ? wpos.xz : (an.x > an.z ? wpos.zy : wpos.xy);
+	uv *= tex_scale;
+	vec3 a = texture(albedo_tex, uv).rgb;
+	float n = texture(moss_noise, wpos.xz * 0.11 + wpos.y * 0.05).r;
+	float mo = moss * smoothstep(0.75, 0.98, wnrm.y * 0.5 + n * 0.6);
+	vec3 col = a * tint;
+	col *= mix(1.0, 0.55, wet * smoothstep(1.2, -0.2, wpos.y));
+	ALBEDO = mix(col, moss_color * (0.65 + 0.7 * n), clamp(mo, 0.0, 1.0));
+	ROUGHNESS = mix(0.8 * rough_mul, 0.92, mo);
+	NORMAL_MAP = texture(normal_tex, uv).xyz;
+	NORMAL_MAP_DEPTH = normal_strength * (1.0 - mo);
+}
+"""
+
+const TERRAIN_LO := """
+shader_type spatial;
+uniform sampler2D grass_tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D grass_nrm : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D dirt_tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D rock_tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D rock_nrm : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D noise : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec3 grass_tint : source_color = vec3(1.0);
+varying vec3 wpos;
+varying float steep;
+void vertex() {
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	steep = 1.0 - normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
+}
+void fragment() {
+	vec2 uv = wpos.xz * 0.18;
+	float n = texture(noise, wpos.xz * 0.05).r;
+	float rock = smoothstep(0.28, 0.5, steep + (n - 0.5) * 0.25);
+	vec3 col = rock > 0.5 ? texture(rock_tex, vec2(wpos.x + wpos.z, wpos.y) * 0.12).rgb : texture(grass_tex, uv).rgb * grass_tint * (0.8 + 0.4 * n);
+	col = mix(col, col * vec3(1.15, 1.05, 0.85), 1.0 - smoothstep(-0.1, 0.6, wpos.y));
+	ALBEDO = col * COLOR.rgb;
+	ROUGHNESS = 0.88;
 }
 """
 
@@ -141,7 +203,10 @@ void fragment() {
 }
 """
 
-func _init() -> void:
+var cheap := false
+
+func _init(lightweight := false) -> void:
+	cheap = lightweight
 	var stone := _texset("stone", ["castle_wall_slates", "medieval_blocks_02", "stone_wall", "rock_wall_08", "castle_brick_07"],
 		Color(0.62, 0.58, 0.5), Color(0.38, 0.35, 0.3), 3.0)
 	var rock := _texset("rock", ["rock_face", "aerial_rocks_02", "rock_wall_10", "rocks_ground_02", "rock_boulder_dry"],
@@ -170,7 +235,7 @@ func _init() -> void:
 	m.bark = _tri(bark, Color(1, 1, 1), 0.6, 0.0, mossn)
 
 	var ter := ShaderMaterial.new()
-	ter.shader = _shader(TERRAIN)
+	ter.shader = _shader(TERRAIN_LO if cheap else TERRAIN)
 	ter.set_shader_parameter("grass_tex", grass.a); ter.set_shader_parameter("grass_nrm", grass.n)
 	ter.set_shader_parameter("dirt_tex", dirt.a)
 	ter.set_shader_parameter("rock_tex", rock.a); ter.set_shader_parameter("rock_nrm", rock.n)
@@ -279,7 +344,7 @@ func _tri(set: Dictionary, tint: Color, scale: float, moss: float, mossn: Textur
 var _tri_s: Shader
 func _tri_shader() -> Shader:
 	if _tri_s == null:
-		_tri_s = _shader(TRIPLANAR)
+		_tri_s = _shader(TRIPLANAR_LO if cheap else TRIPLANAR)
 	return _tri_s
 
 func _std(c: Color, rough: float, metal := 0.0) -> StandardMaterial3D:

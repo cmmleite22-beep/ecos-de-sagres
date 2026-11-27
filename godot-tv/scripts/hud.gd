@@ -170,7 +170,9 @@ func _ready() -> void:
 
 	fps_lbl = _label("", 18, Color(1, 1, 1, 0.5))
 	fps_lbl.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	fps_lbl.position = Vector2(-110, -32)
+	fps_lbl.position = Vector2(-560, -32)
+	fps_lbl.size = Vector2(540, 24)
+	fps_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(fps_lbl)
 
 func set_room(code: String, url: String) -> void:
@@ -317,10 +319,6 @@ func hitmarker(i: int, head: bool) -> void:
 	views[i].hitm.add_theme_color_override("font_color", Color(1, 0.3, 0.2) if head else Color(1, 1, 1))
 
 func frame(players: Array, dt: float, max_hp: float) -> void:
-	_fps_acc += dt; _fps_n += 1
-	if _fps_acc > 1.0:
-		fps_lbl.text = "%d fps" % int(round(_fps_n / _fps_acc))
-		_fps_acc = 0.0; _fps_n = 0
 	if _toast_t > 0.0:
 		_toast_t -= dt
 		if _toast_t <= 0.0:
