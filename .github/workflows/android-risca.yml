@@ -54,7 +54,7 @@ jobs:
 
       - name: Compilar APK e AAB
         env:
-          SITE_URL: ${{ inputs.site_url || vars.RISCA_SITE_URL || 'https://cmmleite22-beep.github.io/ecos-de-sagres' }}
+          SITE_URL: ${{ inputs.site_url || vars.RISCA_SITE_URL || 'https://risca-e-arrisca.web.app' }}
         run: |
           set -e
           cd android-risca

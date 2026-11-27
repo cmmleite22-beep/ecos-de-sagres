@@ -11,10 +11,10 @@ Código em `android-risca/`. Compila sozinha no GitHub (workflow **App Android R
 
 No telemóvel Android, abrir no Chrome:
 
-**https://cmmleite22-beep.github.io/ecos-de-sagres/risca/app/**
+**https://risca-e-arrisca.web.app/risca/app/**
 
-O Android pede para autorizar a instalação a partir do Chrome. Enquanto o site estiver em `github.io`,
-a app mostra uma barra fina com o endereço no topo (ver «Alojamento» abaixo); tudo o resto funciona.
+O Android pede para autorizar a instalação a partir do Chrome. Até haver `assetlinks.json` com a chave definitiva (ver «Chave de assinatura»), a app mostra uma barra fina
+com o endereço no topo; tudo o resto funciona.
 
 Os ficheiros ficam também na release `risca-android` do repositório:
 `risca-e-arrisca.apk` (instalar no telemóvel), `risca-e-arrisca.aab` (para a Play Store) e `LEIA-ME-chave.txt`.

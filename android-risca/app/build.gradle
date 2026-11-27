@@ -3,7 +3,7 @@
 plugins { id 'com.android.application' }
 
 // endereço do site (muda quando o jogo passar para o Cloudflare Pages): -PsiteUrl=https://…
-def siteUrl = (project.findProperty('siteUrl') ?: 'https://cmmleite22-beep.github.io/ecos-de-sagres').toString().replaceAll('/+$', '')
+def siteUrl = (project.findProperty('siteUrl') ?: 'https://risca-e-arrisca.web.app').toString().replaceAll('/+$', '')
 def siteOrigin = new URL(siteUrl).with { "${it.protocol}://${it.host}" }
 def hostName = new URL(siteUrl).host
 
