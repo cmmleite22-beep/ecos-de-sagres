@@ -39,7 +39,17 @@ jobs:
         run: |
           set -e
           if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > /tmp/risca.keystore
+            # Tolera o que vem colado do Cloud Shell: espaços, quebras de linha e o "nome@cloudshell:~$" do terminal.
+            CLEAN=$(printf '%s' "$KEYSTORE_B64" | sed -E 's/(cmmleite22)?@cloudshell:[^$]*\$//g' | tr -s ' \t\r' '\n\n\n' | awk '{ if (length($0) > length(best)) best = $0 } END { print best }')
+            if ! printf '%s' "$CLEAN" | base64 -d > /tmp/risca.keystore 2>/dev/null; then
+              echo "::error::O segredo RISCA_KEYSTORE_B64 não é texto base64 válido. Volte a copiar só o bloco de letras do comando base64 (ver docs/ANDROID-RISCA.md)."
+              exit 1
+            fi
+            if ! keytool -list -keystore /tmp/risca.keystore -storepass "${KEYSTORE_PASS:-android}" -alias risca > /dev/null 2>&1; then
+              echo "::error::A chave abriu mas a palavra-passe RISCA_KEYSTORE_PASS não serve (ou o nome da chave não é risca)."
+              exit 1
+            fi
+            echo "Chave fixa lida com sucesso."
             echo "KEYSTORE_PASS=${KEYSTORE_PASS:-android}" >> "$GITHUB_ENV"
             echo "KEY_PASS=${KEYSTORE_PASS:-android}" >> "$GITHUB_ENV"
           else
