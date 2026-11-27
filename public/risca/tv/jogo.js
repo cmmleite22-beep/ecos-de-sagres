@@ -322,7 +322,6 @@ class Hud {
     if (!this.origin) this.origin = await this.lanOrigin();
     $('#room-code').textContent = code || '····';
     const url = this.controllerUrl(code);
-    $('#join-url').textContent = url.replace(/^https?:\/\//, '');
     if (code) this.qr(url); else $('#qr').innerHTML = '';
     $('#ws-status').textContent = code ? '' : 'A ligar ao servidor…';
   }
@@ -331,7 +330,6 @@ class Hud {
     if (!staticMode) return;
     document.body.classList.add('static');
     const url = this.controllerUrl(null);
-    $('#join-url').textContent = url.replace(/^https?:\/\//, '');
     $('#ws-status').textContent = '';
     this.qr(url);
   }
