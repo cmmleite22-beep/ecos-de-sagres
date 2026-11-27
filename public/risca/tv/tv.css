@@ -16,7 +16,12 @@ body {
 section { position: fixed; inset: 0; display: none; }
 body[data-phase="lobby"] #lobby { display: flex; }
 body:not([data-phase="lobby"]) #game { display: grid; }
-body[data-phase="final"] #final { display: flex; }
+body[data-phase="final"] #final, body[data-phase="vote"] #vote { display: flex; }
+#pgrid, #pshow-wrap { display: none; }
+body[data-phase="pdraw"] #pgrid, body[data-phase="pguess"] #pgrid { display: grid; }
+body[data-phase="pshow"] #pshow-wrap { display: flex; }
+body[data-phase^="p"] #board-wrap, body[data-phase^="p"] #side { display: none; }
+body[data-phase="pshow"] #timer { visibility: hidden; }
 .r { color: var(--red); } .e { color: var(--ink); font-size: 0.7em; } .a { color: var(--blue); }
 
 /* ---------- lobby ---------- */
@@ -46,6 +51,8 @@ body.static .code-l, body.static #room-code, body.static #ws-status { display: n
 #lplayers { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2vh; margin-top: 2.4vh; }
 #lplayers li { display: flex; align-items: center; gap: 1vh; padding: 0.8vh 1vh; border-radius: 1vh; background: rgba(0,0,0,0.04); border-bottom: 0.5vh solid var(--c); font-size: 2.8vh; }
 #lplayers li em { font-size: 1.8vh; opacity: 0.6; font-style: normal; margin-left: auto; }
+#lplayers li.off, #players li.off { opacity: 0.5; }
+#lplayers li .tm, .tm { font-size: 1.8vh; color: #fff; background: var(--t); border-radius: 0.6vh; padding: 0 0.6vh; }
 #lplayers li.empty { grid-column: 1 / -1; border-color: transparent; opacity: 0.7; justify-content: center; }
 i { font-style: normal; }
 #lplayers li i, #players li i, .step i {
@@ -142,3 +149,49 @@ i { font-style: normal; }
 @keyframes wiggle { 0%, 100% { transform: rotate(-12deg) translateX(-2vh); } 50% { transform: rotate(12deg) translateX(2vh); } }
 @keyframes rise { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 15% { opacity: 1; transform: translateY(-15vh) scale(1.1); } 100% { transform: translateY(-75vh) scale(1); opacity: 0; } }
 @keyframes slide { from { transform: translateX(3vh); opacity: 0; } }
+
+/* equipas */
+#players li.team { border-left: none; background: var(--c); color: #fff; justify-content: space-between; padding: 0.5vh 1.2vh; margin-top: 0.6vh; }
+#players li.team b { font-family: var(--marker); font-size: 2.4vh; }
+#players li.team .pts { opacity: 1; font-size: 2.4vh; font-weight: bold; }
+body.teams #players { gap: 0.6vh; }
+body.teams #players li:not(.team) { padding: 0.4vh 1vh; }
+
+/* modo pequenos: as 4 opções na TV */
+#opts { display: flex; flex-wrap: wrap; gap: 0.8vh; margin-top: 1vh; }
+#opts span { background: #fff6cf; border: 2px solid var(--ink); border-radius: 1vh; padding: 0.4vh 1.2vh; font-size: 2.6vh; font-family: var(--marker); }
+
+/* Passa o Risco */
+#pgrid { grid-column: 2 / 4; grid-template-columns: repeat(var(--cols, 3), 1fr); gap: 1.4vh; align-content: start; height: 82vh; overflow: hidden; }
+#pgrid figure { background: #fff; border: 0.4vh solid var(--c); border-radius: 1vh; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+#pgrid canvas { width: 100%; aspect-ratio: 4 / 3; display: block; }
+#pgrid .writing { aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; font-size: 9vh; background: #fffdf7; animation: wiggle 1.6s ease-in-out infinite; }
+#pgrid figcaption { display: flex; justify-content: space-between; padding: 0.4vh 1vh; font-size: 2.4vh; background: #fffdf7; }
+#pgrid figcaption .ok { display: none; color: var(--green); font-weight: bold; }
+#pgrid figure.done figcaption .ok { display: inline; }
+#pgrid figure.done { box-shadow: 0 0 0 0.4vh var(--green); }
+#pshow-wrap { grid-column: 2 / 4; flex-direction: column; height: 82vh; }
+#pshow { display: flex; flex-wrap: wrap; gap: 1.2vh; align-items: center; align-content: flex-start; }
+#pshow .card { width: 18vw; background: #fff; border-radius: 1vh; box-shadow: 0 0.4vh 1vh rgba(0,0,0,0.15); padding: 0.8vh; display: flex; flex-direction: column; align-items: center; gap: 0.4vh; }
+#pshow .card.new { animation: pop 0.45s ease-out; }
+#pshow .card canvas { width: 100%; aspect-ratio: 4 / 3; border: 1px solid rgba(0,0,0,0.1); }
+#pshow .card .txt { font-family: var(--marker); font-size: 3.4vh; text-align: center; min-height: 13.5vw; display: flex; align-items: center; justify-content: center; color: var(--blue); word-break: break-word; }
+#pshow .card.word .txt { color: var(--red); }
+#pshow .card span { font-size: 2vh; }
+#pshow .arrow { font-size: 4vh; opacity: 0.5; }
+#pshow-end { font-family: var(--marker); font-size: 4.4vh; color: var(--red); text-align: center; margin-top: 2vh; }
+
+/* Lápis de Ouro */
+#vote { flex-direction: column; align-items: center; padding-top: 3vh; background: var(--paper); background-image: inherit; background-size: inherit; z-index: 4; }
+#vote h1 { font-family: var(--marker); font-size: 7vh; transform: rotate(-2deg); color: #b88600; }
+#vote .sub { font-size: 3vh; margin: 1vh 0 2vh; }
+#vgallery, #gallery { display: flex; gap: 1.6vh; flex-wrap: wrap; justify-content: center; max-width: 96vw; }
+#vgallery figure, #gallery figure { background: #fff; padding: 0.8vh 0.8vh 0.4vh; box-shadow: 0 0.4vh 1vh rgba(0,0,0,0.18); position: relative; }
+#vgallery canvas { width: 26vh; height: 19.5vh; display: block; border: 1px solid rgba(0,0,0,0.1); }
+#vgallery figcaption { display: flex; flex-direction: column; align-items: center; font-size: 2.2vh; line-height: 1.15; padding-top: 0.4vh; }
+#vgallery figcaption span { font-size: 1.8vh; }
+.num { position: absolute; left: -1.2vh; top: -1.2vh; width: 4.6vh; height: 4.6vh; border-radius: 50%; background: var(--ink); color: #fff; font-family: var(--marker); font-size: 2.6vh; display: flex; align-items: center; justify-content: center; }
+#vcount { margin-top: auto; margin-bottom: 3vh; font-size: 3vh; }
+#gallery figure.gold { box-shadow: 0 0 0 0.6vh #e8b500, 0 0.4vh 1vh rgba(0,0,0,0.18); }
+#gallery figure.gold::after { content: '🏅'; position: absolute; right: -1.4vh; top: -1.6vh; font-size: 4.4vh; }
+#golden { font-size: 3vh; margin-top: 1.4vh; }

@@ -25,6 +25,27 @@ ou o teclado (de quem adivinha). Não é preciso instalar nada na TV.
 8. Depois de todos desenharem em todas as voltas aparece o **pódio** e a **galeria com os desenhos** do jogo.
    **JOGAR DE NOVO** volta à sala de espera.
 
+### Modos de jogo (o chefe da sala escolhe)
+- **✏️ Clássico**: as regras acima.
+- **👥 Equipas**: 2 a 4 equipas (Vermelha, Azul, Verde, Amarela). Cada pessoa escolhe a equipa no telemóvel;
+  as equipas desenham à vez e os pontos de cada membro somam para a equipa. Uma equipa pode ter um só telemóvel
+  (por exemplo, numa turma) ou vários. O pódio final é das equipas.
+- **🔄 Passa o Risco** (sem pontos): todos desenham ao mesmo tempo uma palavra secreta. Cada desenho passa ao
+  seguinte, que escreve o que acha que é; o seguinte desenha esse palpite, e assim por diante até cada cadeia
+  dar a volta. No fim, a TV mostra cada cadeia peça a peça (o chefe da sala pode avançar com **Seguinte**).
+- **🧒 Modo pequenos** (clássico e equipas): em vez de escrever, quem adivinha escolhe entre 4 palavras.
+  Uma opção errada fica riscada e é preciso esperar 3 segundos para tentar outra.
+
+### Lápis de Ouro e galeria
+No fim (clássico e equipas, com 2 ou mais desenhos) há 25 segundos para votar no telemóvel no melhor desenho
+(não vale votar no seu). O vencedor ganha +60 pontos e fica destacado na galeria. No ecrã final, cada pessoa pode
+**guardar no telemóvel** qualquer desenho do jogo; quem acabou de desenhar também pode guardar o seu logo a seguir.
+
+### Voltar a entrar
+Cada telemóvel tem um identificador guardado. Se a ligação cair (ecrã bloqueado, rede, página recarregada),
+o telemóvel volta a entrar sozinho e recupera o lugar, os pontos e até o desenho em curso. Quem está desligado
+aparece esbatido na TV ("a voltar…") e tem 3 minutos para voltar; quem desenha tem 15 segundos antes de a vez acabar.
+
 Quem já acertou pode mandar **reações** (👏 😂 🤯 🔥 …) que sobem no ecrã da TV.
 
 ### Pontos
@@ -34,9 +55,11 @@ Quem já acertou pode mandar **reações** (👏 😂 🤯 🔥 …) que sobem n
 
 ### Temas
 Tudo misturado, Animais, Comida, Casa e objetos, Natureza e lugares, Ações e profissões, Desporto e lazer,
-Portugal e Açores (cerca de 420 palavras em português de Portugal, em `public/risca/palavras.js`)
+Portugal e Açores (cerca de 420 palavras em português de Portugal, em `public/risca/palavras.js`),
+**Inglês (English)** com 60 palavras para aulas de língua (não entra no "Tudo misturado")
 e **As nossas palavras**: o chefe da sala escreve a sua lista no telemóvel (separada por vírgulas),
-útil para rever vocabulário numa aula.
+útil para rever vocabulário numa aula. As listas podem ser **guardadas com um nome** nesse telemóvel
+e escolhidas noutro dia.
 
 ## Técnica
 - 2D leve: o desenho é feito numa tela de 800×600 com as mesmas operações na TV e no telemóvel
@@ -67,5 +90,6 @@ Aplicação Cast registada e publicada: **6179B961** (em `public/risca/config.js
 ```bash
 npm start &
 node tests/risca-e2e.mjs        # TV + 3 telemóveis simulados; capturas em shots/risca/
+node tests/risca-novidades.mjs  # voltar a entrar, equipas, modo pequenos, listas, Lápis de Ouro, Passa o Risco
 node tests/risca-cast-stub.mjs  # caminho Chromecast com o SDK simulado
 ```

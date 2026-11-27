@@ -104,3 +104,35 @@ button { font: inherit; border: none; cursor: pointer; color: inherit; backgroun
 /* fim */
 #f-top { font-size: 22px; padding-left: 26px; }
 #f-top li span { opacity: 0.7; }
+
+/* novidades */
+.mini { background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 6px 10px; font-size: 16px; }
+label.check { flex-direction: row; align-items: center; gap: 10px; font-size: 17px; }
+label.check input { width: 24px; height: 24px; flex: none; }
+.list-row { display: flex; gap: 6px; }
+.list-row input { flex: 1; font-size: 16px; padding: 8px; }
+#o-lists { font-size: 16px; }
+.mode-help { text-align: left; font-size: 15px; }
+#team-pick { width: 100%; max-width: 440px; }
+#team-btns { display: flex; gap: 8px; }
+#team-btns button { flex: 1; color: #fff; background: var(--t); border-radius: 10px; padding: 10px 4px; font-family: var(--marker); font-size: 17px; opacity: 0.55; }
+#team-btns button.sel { opacity: 1; outline: 3px solid var(--ink); outline-offset: 2px; }
+#lp li.off { opacity: 0.45; }
+#lp li .tm { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--t); margin-left: 5px; }
+#g-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 440px; }
+#g-options button { background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 18px 8px; font-family: var(--marker); font-size: 22px; box-shadow: 0 4px 0 var(--ink); }
+#g-options button:disabled { opacity: 0.3; text-decoration: line-through; box-shadow: none; }
+#g-options button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+#t-done { font-size: 22px; padding: 10px; }
+#pg-img { width: 100%; max-width: 440px; aspect-ratio: 4 / 3; background: #fff; border: 3px solid var(--ink); border-radius: 8px; object-fit: contain; }
+#pg-form { display: flex; gap: 8px; width: 100%; max-width: 440px; }
+#pg-form input { flex: 1; }
+#pg-form .primary { padding: 0 18px; }
+#v-list, #f-gal { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 440px; }
+#v-list button, #f-gal button { background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; text-align: left; font-size: 18px; }
+#v-list button .n { font-family: var(--marker); background: var(--ink); color: #fff; border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+#v-list button.sel { background: #fff1c4; border-color: #b88600; box-shadow: 0 0 0 3px #e8b500; }
+#v-list button:disabled { opacity: 0.4; }
+#f-gal-t { font-family: var(--marker); font-size: 20px; margin-top: 8px; }
+#f-gal button span { flex: 1; }
+.team-res { font-size: 20px; text-align: center; }

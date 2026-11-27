@@ -44,7 +44,7 @@ export class Net {
 
   dispatch(m) {
     switch (m.t) {
-      case 'join': this.emit('join', m.id, m.name); break;
+      case 'join': this.emit('join', m.id, m.name, m.key); break;
       case 'leave': this.emit('leave', m.id); break;
       case 'in': this.emit('input', m.id, m); break;
       default: this.emit('msg', m.id, m);
@@ -52,9 +52,9 @@ export class Net {
   }
 
   send(id, msg) {
-    if (id && id.startsWith('c_')) { this.castCtx?.sendCustomMessage(RISCA.CAST_NAMESPACE, id.slice(2), msg); return; }
+    if (id && id.startsWith('c_')) { try { this.castCtx?.sendCustomMessage(RISCA.CAST_NAMESPACE, id.slice(2), msg); } catch {} return; }
     if (id && id.startsWith('kb')) return; // jogadores de teclado
     if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(id ? { ...msg, to: id } : msg));
-    if (!id && this.castCtx) this.castCtx.sendCustomMessage(RISCA.CAST_NAMESPACE, undefined, msg);
+    if (!id && this.castCtx) { try { this.castCtx.sendCustomMessage(RISCA.CAST_NAMESPACE, undefined, msg); } catch {} }
   }
 }
