@@ -27,6 +27,7 @@ export function detectarLingua() {
 const TXT = {};
 
 TXT.pt = {
+  'name.r': 'Risca', 'name.e': 'e', 'name.a': 'Arrisca',
   'c.pickTheme': 'Escolhe acima um tema ou uma das tuas categorias para lhe juntar palavras.',
 
   misto: 'Tudo misturado',
@@ -188,6 +189,7 @@ TXT.pt = {
 
 TXT['pt-BR'] = {
   ...TXT.pt,
+  'name.r': 'Risca', 'name.e': 'e', 'name.a': 'Arrisca',
   'c.pickTheme': 'Escolha acima um tema ou uma das suas categorias para juntar palavras a ele.',
 
   team: 'Equipe {t}',
@@ -278,6 +280,7 @@ TXT['pt-BR'] = {
 };
 
 TXT.en = {
+  'name.r': 'Doodle', 'name.e': '&', 'name.a': 'Dare',
   'c.pickTheme': 'Pick a theme or one of your categories above to add words to it.',
 
   misto: 'Everything mixed',
@@ -433,6 +436,7 @@ TXT.en = {
 };
 
 TXT.es = {
+  'name.r': 'Pinta', 'name.e': 'y', 'name.a': 'Arriesga',
   'c.pickTheme': 'Elige arriba un tema o una de tus categorías para añadirle palabras.',
 
   misto: 'Todo mezclado',
@@ -588,6 +592,7 @@ TXT.es = {
 };
 
 TXT.fr = {
+  'name.r': 'Gribouille', 'name.e': 'et', 'name.a': 'Devine',
   'c.pickTheme': 'Choisis ci-dessus un thème ou une de tes catégories pour y ajouter des mots.',
 
   misto: 'Tout mélangé',
@@ -743,6 +748,7 @@ TXT.fr = {
 };
 
 TXT.de = {
+  'name.r': 'Kritzel', 'name.e': '&', 'name.a': 'Rate',
   'c.pickTheme': 'Wähle oben ein Thema oder eine deiner Kategorien, um Wörter hinzuzufügen.',
 
   misto: 'Alles gemischt',
@@ -898,6 +904,7 @@ TXT.de = {
 };
 
 TXT.zh = {
+  'name.r': '画画', 'name.e': '·', 'name.a': '猜猜',
   'c.pickTheme': '先在上面选一个主题或你的分类，再给它添加词语。',
 
   misto: '全部混合',
@@ -1063,6 +1070,8 @@ export const nomeLingua = (lang) => LINGUAS.find(([c]) => c === lang)?.[1] || la
 // Traduz os elementos com data-i18n (texto), data-i18n-html (com <b>) e data-i18n-ph (placeholder).
 export function traduzirPagina(lang, root = document) {
   document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
+  const nome = [tr(lang, 'name.r'), tr(lang, 'name.e'), tr(lang, 'name.a')].join(' ');
+  document.title = nome;
   for (const el of root.querySelectorAll('[data-i18n]')) el.textContent = tr(lang, el.dataset.i18n);
   for (const el of root.querySelectorAll('[data-i18n-html]')) el.innerHTML = tr(lang, el.dataset.i18nHtml);
   for (const el of root.querySelectorAll('[data-i18n-ph]')) el.placeholder = tr(lang, el.dataset.i18nPh);
