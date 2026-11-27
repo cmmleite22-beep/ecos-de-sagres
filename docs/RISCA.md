@@ -4,7 +4,7 @@ Jogo de festa para **2 a 8 pessoas**, com a mesma base dos outros jogos deste re
 a **TV** mostra o desenho, os palpites e a pontuação; cada **telemóvel** é o lápis (de quem desenha)
 ou o teclado (de quem adivinha). Não é preciso instalar nada na TV.
 
-- TV: `/risca/tv/` (no Chromecast: `https://cmmleite22-beep.github.io/ecos-de-sagres/risca/tv/?cast=1`)
+- TV: `/risca/tv/` (no Chromecast: `https://risca-e-arrisca.web.app/risca/tv/?cast=1`)
 - Telemóvel: `/risca/comando/` (ou só `/risca/`)
 
 ## Como jogar
@@ -81,8 +81,8 @@ e escolhidas noutro dia.
 ## Chromecast
 Aplicação Cast registada e publicada: **6179B961** (em `public/risca/config.js`). Como foi registada:
 1. <https://cast.google.com/publish> → **Add new application → Custom Receiver**, nome "Risca e Arrisca",
-   URL `https://cmmleite22-beep.github.io/ecos-de-sagres/risca/tv/?cast=1`.
-2. Em **Sender Details → Chrome**, endereço do comando `https://cmmleite22-beep.github.io/ecos-de-sagres/risca/comando/`
+   URL `https://risca-e-arrisca.web.app/risca/tv/?cast=1`.
+2. Em **Sender Details → Chrome**, endereço do comando `https://risca-e-arrisca.web.app/risca/comando/`
    (Listing em NO) e **Save**: sem isto a consola não deixa publicar.
 3. **Publish** (para não ser preciso registar o número de série da TV).
 
