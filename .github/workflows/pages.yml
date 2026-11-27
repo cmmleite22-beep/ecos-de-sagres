@@ -24,14 +24,7 @@ jobs:
           node-version: 20
       - run: npm ci
       - name: Montar o site estático
-        run: |
-          mkdir -p _site/vendor/addons
-          cp -r public/* _site/
-          cp node_modules/three/build/three.module.js _site/vendor/
-          cp -r node_modules/three/examples/jsm/* _site/vendor/addons/
-          cp node_modules/qrcode-generator/qrcode.js _site/vendor/
-          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=controller/"><a href="controller/">Ecos de Sagres</a>' > _site/index.html
-          touch _site/.nojekyll
+        run: npm run build:site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

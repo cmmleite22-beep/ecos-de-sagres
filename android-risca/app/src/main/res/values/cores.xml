@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="papel">#F7F0E1</color>
+    <style name="Arranque" parent="android:Theme.Translucent.NoTitleBar" />
+</resources>

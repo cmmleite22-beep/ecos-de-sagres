@@ -1,0 +1,52 @@
+// App Android do comando do Risca e Arrisca: uma Trusted Web Activity (TWA) que abre a página do
+// comando no Chrome do telemóvel, em ecrã inteiro, com o botão Chromecast a funcionar como no browser.
+plugins { id 'com.android.application' }
+
+// endereço do site (muda quando o jogo passar para o Cloudflare Pages): -PsiteUrl=https://…
+def siteUrl = (project.findProperty('siteUrl') ?: 'https://cmmleite22-beep.github.io/ecos-de-sagres').toString().replaceAll('/+$', '')
+def siteOrigin = new URL(siteUrl).with { "${it.protocol}://${it.host}" }
+def hostName = new URL(siteUrl).host
+
+android {
+    namespace 'pt.riscaearrisca.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'pt.riscaearrisca.app'
+        minSdk 21
+        targetSdk 36
+        versionCode((project.findProperty('versionCode') ?: '1') as int)
+        versionName((project.findProperty('versionName') ?: '1.0').toString())
+        manifestPlaceholders = [
+            hostName    : hostName,
+            defaultUrl  : siteUrl + '/risca/comando/?app=1',
+            launcherName: 'Risca e Arrisca',
+        ]
+        // liga a app ao site (ficheiro /.well-known/assetlinks.json do site), para abrir sem barra de endereço
+        resValue 'string', 'asset_statements',
+            "[{\\\"relation\\\":[\\\"delegate_permission/common.handle_all_urls\\\"],\\\"target\\\":{\\\"namespace\\\":\\\"web\\\",\\\"site\\\":\\\"${siteOrigin}\\\"}}]"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('KEYSTORE_PATH') ?: 'sem-chave.keystore')
+            storePassword System.getenv('KEYSTORE_PASS') ?: 'android'
+            keyAlias System.getenv('KEY_ALIAS') ?: 'risca'
+            keyPassword System.getenv('KEY_PASS') ?: 'android'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

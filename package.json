@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "start": "node server/server.js",
-    "test": "node tests/smoke.mjs"
+    "test": "node tests/smoke.mjs",
+    "build:site": "bash scripts/build-site.sh"
   },
   "dependencies": {
     "qrcode-generator": "1.4.4",

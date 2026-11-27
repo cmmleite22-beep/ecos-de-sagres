@@ -1,0 +1,92 @@
+# Compila a app Android do comando do Risca e Arrisca (Trusted Web Activity) e publica o APK e o AAB numa release.
+name: App Android Risca e Arrisca
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: 'Endereço do site (sem / no fim). Vazio = variável RISCA_SITE_URL ou GitHub Pages'
+        required: false
+  push:
+    branches: [main]
+    paths:
+      - 'android-risca/**'
+      - '.github/workflows/android-risca.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Chave de assinatura
+        env:
+          KEYSTORE_B64: ${{ secrets.RISCA_KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.RISCA_KEYSTORE_PASS }}
+        run: |
+          set -e
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > /tmp/risca.keystore
+            echo "KEYSTORE_PASS=${KEYSTORE_PASS:-android}" >> "$GITHUB_ENV"
+            echo "KEY_PASS=${KEYSTORE_PASS:-android}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Sem o segredo RISCA_KEYSTORE_B64: a gerar uma chave temporária. Serve para testar; para a Play Store é preciso uma chave fixa (ver docs/ANDROID-RISCA.md)."
+            keytool -genkeypair -keystore /tmp/risca.keystore -storepass android -keypass android \
+              -alias risca -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Risca e Arrisca,O=Risca e Arrisca,C=PT"
+            echo "KEYSTORE_PASS=android" >> "$GITHUB_ENV"
+            echo "KEY_PASS=android" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE_PATH=/tmp/risca.keystore" >> "$GITHUB_ENV"
+          echo "KEY_ALIAS=risca" >> "$GITHUB_ENV"
+
+      - name: Compilar APK e AAB
+        env:
+          SITE_URL: ${{ inputs.site_url || vars.RISCA_SITE_URL || 'https://cmmleite22-beep.github.io/ecos-de-sagres' }}
+        run: |
+          set -e
+          cd android-risca
+          gradle --no-daemon assembleRelease bundleRelease \
+            -PsiteUrl="$SITE_URL" -PversionCode="$GITHUB_RUN_NUMBER" -PversionName="1.0.$GITHUB_RUN_NUMBER"
+          mkdir -p /tmp/out
+          cp app/build/outputs/apk/release/app-release.apk /tmp/out/risca-e-arrisca.apk
+          cp app/build/outputs/bundle/release/app-release.aab /tmp/out/risca-e-arrisca.aab
+          FP=$(keytool -list -v -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASS" -alias risca | sed -n 's/.*SHA256: //p')
+          {
+            echo "Site: $SITE_URL"
+            echo "Impressão digital SHA-256 da chave de upload: $FP"
+            echo
+            echo "assetlinks.json (para $SITE_URL/.well-known/ na raiz do domínio):"
+            echo "[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"android_app\",\"package_name\":\"pt.riscaearrisca.app\",\"sha256_cert_fingerprints\":[\"$FP\"]}}]"
+          } > /tmp/out/LEIA-ME-chave.txt
+          cat /tmp/out/LEIA-ME-chave.txt
+          ls -la /tmp/out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: risca-e-arrisca-android
+          path: /tmp/out/*
+
+      - name: Publicar release
+        if: github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          TAG="risca-android"
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" /tmp/out/* --target "$GITHUB_SHA" --prerelease \
+            --title "Risca e Arrisca — app Android (${GITHUB_SHA::7})" \
+            --notes "App Android do comando do Risca e Arrisca. O APK instala-se diretamente no telemóvel; o AAB é o ficheiro para a Play Store. Instruções em docs/ANDROID-RISCA.md."
