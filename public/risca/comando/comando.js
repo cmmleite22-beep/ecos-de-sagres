@@ -10,6 +10,8 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const params = new URLSearchParams(location.search);
+// aberto a partir do código QR da TV: a sala já está aberta, é só entrar
+const FROM_TV = params.has('tv');
 const store = {
   get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
@@ -228,6 +230,7 @@ $('#ui-lang').value = LANG;
 function applyLang() {
   traduzirPagina(LANG);
   $('#name').placeholder = T('c.player');
+  if (FROM_TV) { $('#btn-cast span').textContent = T('c.enterRoom'); $('#s-join .sub').textContent = T('c.roomOpen'); }
   renderThemes();
   renderLobby();
   renderSets();
@@ -636,6 +639,7 @@ if (RISCA.CAST_APP_ID !== 'CHANGE_ME') {
     const ctx = cast.framework.CastContext.getInstance();
     ctx.setOptions({ receiverApplicationId: RISCA.CAST_APP_ID, autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED });
     $('#btn-cast').classList.remove('hidden');
+    $('#cast-hint').classList.toggle('hidden', FROM_TV);
     const castInfo = () => {
       const s = ctx.getCastState();
       $('#cast-state').textContent = s === cast.framework.CastState.NO_DEVICES_AVAILABLE ? T('c.castNone')
@@ -655,7 +659,7 @@ if (RISCA.CAST_APP_ID !== 'CHANGE_ME') {
     ctx.addEventListener(cast.framework.CastContextEventType.SESSION_STATE_CHANGED, (e) => {
       if (e.sessionState === cast.framework.SessionState.SESSION_RESUMED && !transport) startCast(ctx.getCurrentSession());
       if (e.sessionState === cast.framework.SessionState.SESSION_ENDED && transport instanceof CastTransport) {
-        transport = null; overlay(null); show('s-join'); $('#join-err').textContent = T('c.castEnded');
+        transport = null; overlay(null); show('s-join'); $('#join-err').textContent = T('c.castEnded', { b: $('#btn-cast span').textContent });
       }
     });
     $('#btn-cast').onclick = async () => {

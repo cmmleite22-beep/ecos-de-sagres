@@ -616,7 +616,7 @@ class Hud {
     if (!staticMode) return;
     document.body.classList.add('static');
     $('#ws-status').textContent = '';
-    this.qr(this.controllerUrl(null));
+    this.qr(this.controllerUrl(null) + '?tv=1'); // quem lê o código QR vê logo «Entrar na sala»
   }
 
   // desenho → imagem (galeria, Passa o Risco, guardar no telemóvel)
