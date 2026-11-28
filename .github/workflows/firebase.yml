@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Montar o site estático
         run: npm ci && npm run build:site
       - uses: google-github-actions/auth@v2
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Testar as regras
         run: node tests/risca-anfitriao-logica.mjs
       - name: Instalar
