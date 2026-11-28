@@ -14,7 +14,7 @@ gcloud config set project "$P" >/dev/null
 echo "1/4 A ligar as APIs (função, compilação, Firestore, Google Play)…"
 gcloud services enable cloudfunctions.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
   run.googleapis.com eventarc.googleapis.com pubsub.googleapis.com firestore.googleapis.com firebaserules.googleapis.com \
-  androidpublisher.googleapis.com iam.googleapis.com cloudresourcemanager.googleapis.com
+  androidpublisher.googleapis.com iam.googleapis.com cloudresourcemanager.googleapis.com firebaseextensions.googleapis.com cloudbilling.googleapis.com
 
 echo "2/4 Base de dados Firestore (Europa)…"
 gcloud firestore databases describe --database='(default)' >/dev/null 2>&1 || \

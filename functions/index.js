@@ -53,7 +53,7 @@ const play = {
 };
 
 export const anfitriao = onRequest(
-  { region: 'europe-west1', cors: true, maxInstances: 5, memory: '256MiB', timeoutSeconds: 20, serviceAccount: 'risca-pagamentos@' },
+  { region: 'europe-west1', invoker: 'public', cors: true, maxInstances: 5, memory: '256MiB', timeoutSeconds: 20, serviceAccount: 'risca-pagamentos@' },
   async (req, res) => {
     if (req.method !== 'POST') { res.status(405).json({ erro: 'metodo' }); return; }
     try {
