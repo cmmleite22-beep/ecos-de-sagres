@@ -31,6 +31,7 @@ for R in roles/cloudfunctions.admin roles/run.admin roles/artifactregistry.admin
   gcloud projects add-iam-policy-binding "$P" --member="serviceAccount:$SA_DEPLOY" --role="$R" --condition=None >/dev/null
 done
 gcloud iam service-accounts add-iam-policy-binding "$SA_RUN" --member="serviceAccount:$SA_DEPLOY" --role=roles/iam.serviceAccountUser >/dev/null
+gcloud iam service-accounts add-iam-policy-binding "$P@appspot.gserviceaccount.com" --member="serviceAccount:$SA_DEPLOY" --role=roles/iam.serviceAccountUser >/dev/null 2>&1 || true
 gcloud iam service-accounts add-iam-policy-binding "$NUM-compute@developer.gserviceaccount.com" --member="serviceAccount:$SA_DEPLOY" --role=roles/iam.serviceAccountUser >/dev/null 2>&1 || true
 
 echo
