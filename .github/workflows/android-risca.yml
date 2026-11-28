@@ -12,6 +12,11 @@ on:
     paths:
       - 'android-risca/**'
       - '.github/workflows/android-risca.yml'
+  # nos pedidos de alteração só se confirma que compila (a release só se publica a partir do main)
+  pull_request:
+    paths:
+      - 'android-risca/**'
+      - '.github/workflows/android-risca.yml'
 
 permissions:
   contents: write

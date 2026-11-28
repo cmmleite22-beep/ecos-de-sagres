@@ -63,12 +63,14 @@ Guardar `risca.keystore` e a palavra-passe num sítio seguro (sem elas não há 
 6. Ficha da loja: ícone `android-risca/loja/icone-512.png`, gráfico `android-risca/loja/grafico-destaque-1024x500.png`,
    capturas (há várias na pasta do projeto), descrição curta e longa.
 7. **Política de privacidade**: `https://<site>/risca/privacidade.html`.
-8. **Segurança dos dados**: o jogo não recolhe dados pessoais; nomes e desenhos só passam entre o telemóvel e a TV
-   durante o jogo e não ficam guardados em servidor.
+8. **Segurança dos dados**: nomes e desenhos só passam entre o telemóvel e a TV durante o jogo e não ficam guardados
+   em servidor. Com as compras na app, declarar também: «Histórico de compras» (recolhido, não partilhado, para
+   funcionalidade da app) e «Identificadores do dispositivo ou outros» (identificador aleatório da app, para contar as
+   salas grátis). Ver [PAGAMENTOS-RISCA.md](PAGAMENTOS-RISCA.md).
 9. **Classificação de conteúdo** (questionário IARC) e público-alvo. Se escolher crianças com menos de 13 anos,
    aplica-se a política *Famílias* (sem anúncios não certificados, sem recolha de dados).
-10. Rentabilizar: app paga (mais simples), ou grátis com compras na app (por exemplo pacotes de temas),
-    o que obriga a usar a faturação da Google Play.
+10. Rentabilizar: app grátis com uma compra única na app para quem abre salas (anfitrião), com 3 salas grátis
+    para experimentar. Os convidados nunca pagam. Ver [PAGAMENTOS-RISCA.md](PAGAMENTOS-RISCA.md).
 
 ## Testes de que ainda não há garantia
 

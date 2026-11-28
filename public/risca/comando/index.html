@@ -64,6 +64,7 @@
     </div>
     <label class="check" id="kids-l"><input type="checkbox" id="o-kids"> <span data-i18n="c.kids">🧒 Modo pequenos: escolher a resposta entre 4, sem escrever</span></label>
   </div>
+  <div id="anf" class="hidden"><p id="anf-line" class="hint"></p><button id="anf-unlock" class="cast hidden" data-i18n="a.unlock">⭐ Desbloquear anfitrião</button></div>
   <button id="btn-start" class="primary big" data-i18n="c.start">COMEÇAR</button>
   <p id="lobby-hint" class="hint"></p>
 </section>
@@ -155,6 +156,22 @@
   <div id="f-gal"></div>
 </section>
 
+<!-- desbloquear o anfitrião (compra única na app Android) -->
+<div id="pay" class="hidden" role="dialog" aria-modal="true">
+  <div class="pay-box">
+    <h2 data-i18n="a.title">⭐ Desbloquear o anfitrião</h2>
+    <p id="pay-why" class="pay-why"></p>
+    <p data-i18n="a.pitch"></p>
+    <button id="pay-buy" class="primary big"></button>
+    <a id="pay-store" class="primary big hidden" target="_blank" rel="noopener" data-i18n="a.getApp">Abrir a app na Google Play</a>
+    <p id="pay-app" class="hint hidden" data-i18n="a.needApp"></p>
+    <button id="pay-restore" class="link" data-i18n="a.restore">Já comprei: restaurar a compra</button>
+    <p id="pay-msg" class="fb"></p>
+    <button id="pay-guest" class="cast" data-i18n="a.guest">Sou convidado</button>
+    <button id="pay-back" class="link" data-i18n="a.back">Voltar</button>
+  </div>
+</div>
+<div id="toast-c" class="hidden"></div>
 <div id="overlay" class="hidden"></div>
 <script type="module" src="comando.js"></script>
 </body>
