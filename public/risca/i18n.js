@@ -1059,6 +1059,9 @@ TXT.zh = {
   'c.set': '词组 {n}',
 };
 
+// junta textos de outro módulo (ex.: anfitriao.js) às línguas existentes
+export function juntarTextos(porLingua) { for (const [l, t] of Object.entries(porLingua)) Object.assign(TXT[l] ||= {}, t); }
+
 // tr('pt', 'tv.round', { a: 1, b: 3 }) → 'Volta 1 de 3'
 export function tr(lang, key, vars) {
   let s = TXT[lang]?.[key] ?? TXT.pt[key] ?? key;

@@ -32,6 +32,8 @@ const n = await p.evaluate(() => window.__risca.players.size);
 const ok2 = sent.some((m) => m.t === 'welcome') && n === 1;
 console.log(ok2 ? 'OK ' : 'FALHOU', ' pedido repetido reenvia welcome sem duplicar o jogador', n);
 await p.evaluate(() => { window.__ctx.l.msg({ senderId: 'tel2', data: { t: 'join', name: 'Rui' } }); window.__ctx.l.msg({ senderId: 'tel1', data: { t: 'start' } }); });
+// sem resposta do servidor do anfitrião (aqui não há rede para ele), o jogo começa na mesma
+await p.waitForFunction(() => window.__risca.phase !== 'lobby', null, { timeout: 10000 }).catch(() => {});
 const phase = await p.evaluate(() => window.__risca.phase);
 console.log(phase !== 'lobby' ? 'OK ' : 'FALHOU', ' COMEÇAR pelo canal Cast inicia o jogo', phase);
 console.log(errs.length ? 'FALHOU  erros: ' + errs.join(' | ') : 'OK  sem erros de JavaScript');

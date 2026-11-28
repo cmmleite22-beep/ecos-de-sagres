@@ -1,0 +1,13 @@
+{
+  "name": "risca-anfitriao",
+  "description": "Risca e Arrisca: verificação das compras de anfitrião e das salas grátis (Firebase Cloud Functions)",
+  "type": "module",
+  "private": true,
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "dependencies": {
+    "firebase-admin": "13.10.0",
+    "firebase-functions": "6.6.0",
+    "google-auth-library": "9.15.1"
+  }
+}

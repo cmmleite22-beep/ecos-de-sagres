@@ -5,6 +5,7 @@ import { RISCA, STATIC_MODE } from '../config.js';
 import { Quadro, paint, W, H } from '../quadro.js';
 import { escolher, escolherVarias, opcoes, comparar, padrao, parseCustom, norm, NIVEL, temaLista, temaValido } from '../palavras.js';
 import { tr, traduzirPagina, detectarLingua, linguaValida } from '../i18n.js';
+import { ANFITRIAO, api } from '../anfitriao.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -145,7 +146,10 @@ export class Jogo {
         if (this.phase === 'lobby' && this.teamMode && m.team >= 0 && m.team < this.settings.teams) { p.team = m.team | 0; this.lobbyChanged(); }
         break;
       case 'start':
-        if (this.phase === 'lobby') this.startGame(); break;
+        if (this.phase === 'lobby') this.pedirInicio(); break;
+      case 'anfitriao': // passe de quem comprou o anfitrião na app (ver anfitriao.js)
+        if (typeof m.passe === 'string' && /^[0-9a-f]{64}$/.test(m.passe)) p.passe = m.passe;
+        break;
       case 'again':
         if (this.phase === 'final') this.toLobby(); break;
       case 'pick':
@@ -193,6 +197,36 @@ export class Jogo {
     }
     if (m.kids !== undefined) s.kids = !!m.kids;
     this.lobbyChanged();
+  }
+
+  // ---------------- anfitrião: a sala só começa com um anfitrião pago ou com uma sala grátis do chefe ----------------
+  // Os convidados nunca pagam. Pergunta-se uma vez por sala (os «Jogar de novo» seguintes já não contam).
+  // Sem resposta do servidor, joga-se na mesma.
+  async pedirInicio() {
+    if (!ANFITRIAO.ATIVO || this.salaAberta) { this.startGame(); return; }
+    if (this.aVerificar || this.online.length < RISCA.MIN_PLAYERS) return;
+    const chefe = this.players.get(this.leader);
+    this.aVerificar = true;
+    this.hud.toast(this.t('tv.checking'));
+    const passes = [...new Set(this.list.map((p) => p.passe).filter(Boolean))];
+    const r = await api('sala', { key: chefe?.key || '', passes });
+    this.aVerificar = false;
+    if (this.phase !== 'lobby') return;
+    if (r && r.ok === false) {
+      this.bloqueada = true;
+      this.hud.toast(this.t('tv.locked'));
+      if (chefe) this.net.send(chefe.id, { t: 'paywall', salasGratis: r.salasGratis });
+      this.lobbyChanged();
+      return;
+    }
+    if (r?.ok) {
+      this.salaAberta = r.tipo; this.bloqueada = false;
+      if (r.tipo === 'experiencia') {
+        this.hud.toast(this.t('tv.trial', { r: r.restantes, n: r.salasGratis }));
+        if (chefe) this.net.send(chefe.id, { t: 'sala', tipo: r.tipo, restantes: r.restantes, salasGratis: r.salasGratis });
+      }
+    }
+    this.startGame();
   }
 
   // ---------------- fluxo do jogo ----------------
@@ -500,7 +534,7 @@ export class Jogo {
   lobbyChanged() {
     this.hud.render();
     this.net.send(null, {
-      t: 'lobby', phase: this.phase, leader: this.leader,
+      t: 'lobby', phase: this.phase, leader: this.leader, bloqueada: !!this.bloqueada,
       players: this.list.map((p) => ({ id: p.id, name: p.name, color: p.color, score: p.score, team: p.team, online: p.online })),
       settings: { ...this.settings, custom: this.settings.custom.join(', ') },
       teams: TEAMS.slice(0, this.settings.teams).map((x) => ({ ...x, name: this.teamName(x.i) })),

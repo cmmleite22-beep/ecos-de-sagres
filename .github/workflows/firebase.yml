@@ -31,3 +31,25 @@ jobs:
           service_account: github-deploy@risca-e-arrisca.iam.gserviceaccount.com
       - name: Publicar
         run: npx --yes firebase-tools@14 deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
+
+  # Função «anfitriao» (compras na app e salas grátis do Risca e Arrisca). Só corre depois de o projeto Firebase
+  # passar ao plano Blaze e de se correr scripts/configurar-pagamentos.sh uma vez; depois cria-se a variável
+  # do repositório RISCA_FUNCOES = 1 (Settings → Secrets and variables → Actions → Variables).
+  funcoes:
+    if: vars.RISCA_FUNCOES == '1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Testar as regras
+        run: node tests/risca-anfitriao-logica.mjs
+      - name: Instalar
+        run: cd functions && npm ci
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/1027394540234/locations/global/workloadIdentityPools/github/providers/github-actions
+          service_account: github-deploy@risca-e-arrisca.iam.gserviceaccount.com
+      - name: Publicar a função e as regras do Firestore
+        run: npx --yes firebase-tools@14 deploy --only functions,firestore:rules --project "$FIREBASE_PROJECT" --non-interactive --force

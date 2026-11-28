@@ -5,6 +5,7 @@ import { RISCA, wsUrl, STATIC_MODE } from '../config.js';
 import { Quadro, CORES, TAMANHOS, BORRACHA, W, H } from '../quadro.js';
 import { temaLista, temasDe, parseCustom } from '../palavras.js';
 import { LINGUAS, tr, traduzirPagina, detectarLingua, linguaValida, nomeLingua } from '../i18n.js';
+import { ANFITRIAO, api, servicoPlay, precoPlay, comprarPlay, comprasPlay } from '../anfitriao.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -80,7 +81,10 @@ function onMessage(m) {
       for (const el of $$('.me')) el.textContent = m.name;
       overlay(null);
       if (!st || st.phase === 'lobby') show('s-lobby');
+      enviarPasse();
       break;
+    case 'paywall': abrirPagamento('sala'); break;
+    case 'sala': if (m.tipo === 'experiencia') { estadoAnf = { pago: false, restantes: m.restantes, salasGratis: m.salasGratis }; aviso(T('a.roomTrial', { r: m.restantes, n: m.salasGratis })); } break;
     case 'lobby': lobby = m; renderLobby(); break;
     case 'st': onState(m); break;
     case 'res': onResult(m); break;
@@ -323,6 +327,7 @@ function renderLobby() {
   const n = lobby.players.filter((p) => p.online).length;
   $('#btn-start').disabled = n < RISCA.MIN_PLAYERS;
   $('#lobby-hint').textContent = n < RISCA.MIN_PLAYERS ? T('c.waitOne') : s.mode === 'passa' && n < 3 ? T('c.passa3') : T('c.nReady', { n });
+  renderAnf();
 }
 // por baixo do tema: quantas palavras próprias entram
 function themeInfo() {
@@ -662,7 +667,7 @@ if (RISCA.CAST_APP_ID !== 'CHANGE_ME') {
         transport = null; overlay(null); show('s-join'); $('#join-err').textContent = T('c.castEnded', { b: $('#btn-cast span').textContent });
       }
     });
-    $('#btn-cast').onclick = async () => {
+    ligarTV = async () => {
       $('#join-err').textContent = '';
       try {
         const err = await ctx.requestSession();
@@ -675,11 +680,117 @@ if (RISCA.CAST_APP_ID !== 'CHANGE_ME') {
         $('#join-err').textContent = castErrorText(code) + ' ' + T('c.castCode', { c: code });
       }
     };
+    // quem abre o jogo na TV (sem vir do código QR) é o anfitrião: se as salas grátis acabaram, pede-se a compra antes.
+    // Tem de ser sem esperas: o Chrome só abre a lista de TVs logo a seguir ao toque.
+    $('#btn-cast').onclick = () => {
+      if (!FROM_TV && ANFITRIAO.ATIVO && !passe.get() && estadoAnf && !estadoAnf.pago && estadoAnf.restantes <= 0) { abrirPagamento('criar'); return; }
+      ligarTV();
+    };
   };
   const s = document.createElement('script');
   s.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
   document.head.appendChild(s);
 }
+
+// ---------------- anfitrião (ver ../anfitriao.js) ----------------
+// passe = prova de que este telemóvel comprou o anfitrião (dado pela função na nuvem depois de confirmar com a Google)
+let ligarTV = () => {};
+const passe = { get: () => store.get('risca.passe', ''), set: (p) => store.set('risca.passe', p) };
+let estadoAnf = null;      // { pago, restantes, salasGratis } ou null enquanto o servidor não responde
+let pagarPorque = 'criar'; // 'criar' (antes de abrir o jogo na TV) ou 'sala' (a TV recusou começar)
+
+function enviarPasse() { if (passe.get()) send({ t: 'anfitriao', passe: passe.get() }); }
+function aviso(text, ms = 5000) {
+  const el = $('#toast-c'); el.textContent = text; el.classList.remove('hidden');
+  clearTimeout(aviso.t); aviso.t = setTimeout(() => el.classList.add('hidden'), ms);
+}
+async function atualizarAnfitriao() {
+  if (!ANFITRIAO.ATIVO) return;
+  const r = await api('estado', { key: KEY, ...(passe.get() ? { passe: passe.get() } : {}) });
+  if (r) estadoAnf = r;
+  renderAnf();
+}
+function renderAnf() {
+  const box = $('#anf');
+  const mostrar = ANFITRIAO.ATIVO && !!lobby && (amLeader() || lobby.bloqueada);
+  box.classList.toggle('hidden', !mostrar);
+  if (!mostrar) return;
+  let line = '', unlock = false;
+  if (!amLeader()) line = T('a.leaderNeeds');
+  else if (passe.get() || estadoAnf?.pago) line = T('a.paid');
+  else if (estadoAnf) { line = estadoAnf.restantes > 0 ? T('a.trial', { r: estadoAnf.restantes, n: estadoAnf.salasGratis }) : T('a.trial0'); unlock = true; }
+  if (amLeader() && lobby.bloqueada && !passe.get()) { line = T('a.trial0'); unlock = true; }
+  $('#anf-line').textContent = line;
+  $('#anf-unlock').classList.toggle('hidden', !unlock);
+}
+async function abrirPagamento(porque) {
+  pagarPorque = porque;
+  const n = estadoAnf?.salasGratis || ANFITRIAO.SALAS_GRATIS;
+  $('#pay-why').textContent = T('a.trialOver', { n });
+  $('#pay-msg').textContent = ''; $('#pay-msg').className = 'fb';
+  $('#pay-guest').classList.toggle('hidden', porque !== 'criar');
+  const svc = await servicoPlay();
+  $('#pay-buy').classList.toggle('hidden', !svc);
+  $('#pay-restore').classList.toggle('hidden', !svc);
+  $('#pay-store').classList.toggle('hidden', !!svc);
+  $('#pay-app').classList.toggle('hidden', !!svc);
+  $('#pay-store').href = ANFITRIAO.LOJA;
+  $('#pay-buy').textContent = T('a.buyNoPrice');
+  $('#pay').classList.remove('hidden');
+  if (svc) { const p = await precoPlay(LANG); if (p) $('#pay-buy').textContent = T('a.buy', { p }); }
+}
+function fecharPagamento() { $('#pay').classList.add('hidden'); }
+function payMsg(text, cls = '') { $('#pay-msg').textContent = text; $('#pay-msg').className = 'fb ' + cls; }
+// confirma um token de compra na função na nuvem e guarda o passe
+async function confirmarCompra(token) {
+  const r = await api('comprar', { key: KEY, purchaseToken: token }, 15000);
+  if (r?.ok && r.passe) {
+    passe.set(r.passe); store.set('risca.compra', '');
+    estadoAnf = { ...(estadoAnf || {}), pago: true };
+    return 'ok';
+  }
+  if (!r) { store.set('risca.compra', token); return 'offline'; } // tenta outra vez mais tarde
+  return r.estado === 'pendente' ? 'pendente' : 'falhou';
+}
+function desbloqueado() {
+  fecharPagamento();
+  aviso(T('a.done'), 6000);
+  enviarPasse();
+  renderAnf();
+  // a TV tinha recusado começar: agora já dá
+  if (pagarPorque === 'sala' && amLeader() && lobby?.phase === 'lobby') setTimeout(() => send({ t: 'start' }), 400);
+}
+$('#pay-buy').onclick = async () => {
+  let compra;
+  try { compra = await comprarPlay(); } catch { payMsg(T('a.fail'), 'no'); return; }
+  if (!compra.token) { compra.fechar(false); payMsg(T('a.fail'), 'no'); return; }
+  payMsg(T('a.checking'));
+  const r = await confirmarCompra(compra.token);
+  compra.fechar(r !== 'falhou');
+  if (r === 'ok') desbloqueado();
+  else if (r === 'offline') { payMsg(T('a.offline')); setTimeout(desbloqueado, 1500); }
+  else payMsg(T(r === 'pendente' ? 'a.pending' : 'a.fail'), 'no');
+};
+$('#pay-restore').onclick = async () => {
+  payMsg(T('a.checking'));
+  const tokens = await comprasPlay();
+  if (!tokens.length) { payMsg(T('a.none'), 'no'); return; }
+  let r = 'falhou';
+  for (const t of tokens) { r = await confirmarCompra(t); if (r === 'ok' || r === 'offline') break; }
+  if (r === 'ok' || r === 'offline') desbloqueado();
+  else payMsg(T(r === 'pendente' ? 'a.pending' : 'a.fail'), 'no');
+};
+$('#pay-guest').onclick = () => { fecharPagamento(); ligarTV(); };
+$('#pay-back').onclick = fecharPagamento;
+$('#anf-unlock').onclick = () => abrirPagamento(lobby?.bloqueada ? 'sala' : 'criar');
+// ao abrir: compra que ficou por confirmar, ou compra feita noutro telemóvel/antes de reinstalar (só na app)
+(async () => {
+  if (!ANFITRIAO.ATIVO) return;
+  if (!passe.get() && store.get('risca.compra', '')) await confirmarCompra(store.get('risca.compra', ''));
+  if (!passe.get() && await servicoPlay()) { for (const t of await comprasPlay()) if (await confirmarCompra(t) === 'ok') break; }
+  await atualizarAnfitriao();
+  enviarPasse();
+})();
 
 setInterval(() => send({ t: 'ping', ts: performance.now() }), 4000);
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
